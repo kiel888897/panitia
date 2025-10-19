@@ -1,0 +1,9 @@
+# Mengizinkan preflight request (OPTIONS) dengan status 200 OK
+
+<IfModule mod_headers.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteCond %{HTTP_ACCESS_CONTROL_REQUEST_METHOD} ^(GET|POST|OPTIONS|PUT|DELETE)
+    RewriteCond %{HTTP_ACCESS_CONTROL_REQUEST_HEADERS} ^(Content-Type|Authorization)
+    RewriteRule ^ - [L]
+</IfModule>
