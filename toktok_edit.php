@@ -1,63 +1,129 @@
 <?php
 session_start();
 require_once 'db.php';
+
+// Fungsi ubah teks ke slug (untuk nama file)
 function slugify($text)
 {
-    // Ganti karakter non huruf/angka dengan strip
     $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
     $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
     $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
     $text = trim($text, '-');
-    // Hapus duplikat strip
     $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
-
-    return $text ?: 'n-a';
+    return strtolower($text ?: 'n-a');
 }
-// Cek jika admin sudah login
+
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
-if (isset($_GET['id'])) {
-    $id = $_GET['id'];
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE id = ?");
-    $stmt->execute([$id]);
-    $event = $stmt->fetch(PDO::FETCH_ASSOC);
+// Pastikan ada ID iuran
+if (!isset($_GET['id'])) {
+    header('Location: toktok.php');
+    exit;
+}
 
-    if (!$event) {
-        header('Location: events.php');
-        exit;
-    }
-} else {
-    header('Location: events.php');
+$id = (int) $_GET['id'];
+
+// Ambil data iuran beserta nama anggota
+$stmt = $pdo->prepare("
+    SELECT iuran.*, anggota.nama AS nama_anggota, anggota.jabatan
+    FROM iuran
+    INNER JOIN anggota ON iuran.anggota_id = anggota.id
+    WHERE iuran.id = ?
+    LIMIT 1
+");
+$stmt->execute([$id]);
+$iuran = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$iuran) {
+    header('Location: toktok.php');
     exit;
 }
 
 $error = '';
+$success = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ambil nilai dari form
+    $anggota_id     = $iuran['anggota_id']; // tidak boleh diubah
+    $tanggal_bayar  = $_POST['tanggal_bayar'] ?? '';
+    $toktok         = $_POST['toktok'] ?? 0;
+    $sukarela       = $_POST['sukarela'] ?? 0;
+    $keterangan     = trim($_POST['keterangan'] ?? '');
+    $bukti_lama     = $_POST['bukti_lama'] ?? ($iuran['bukti'] ?? '');
+    $bukti          = $bukti_lama;
 
-    // Ambil dan trim semua input
-    $title           = trim($_POST['title'] ?? '');
-    $day       = trim($_POST['day'] ?? '');
-    $description    = trim($_POST['description'] ?? '');
-    $status      = trim($_POST['status'] ?? '');
-
-
-    if ($title && $day) {
-        $stmt = $pdo->prepare("UPDATE events SET title = ?, day = ?, description = ?, status = ? WHERE id = ?");
-        $stmt->execute([$title, $day, $description, $status, $id]);
-        header('Location: events.php');
-        exit;
+    // basic validation
+    if (!$tanggal_bayar) {
+        $error = "Tanggal bayar wajib diisi.";
+    } elseif (!is_numeric($toktok) || !is_numeric($sukarela)) {
+        $error = "Jumlah toktok dan sukarela harus berupa angka (boleh 0).";
     } else {
-        $error = 'Title, Day fields are required.';
+        // jika ada upload bukti baru
+        if (!empty($_FILES['bukti']['name'])) {
+            $targetDir = "uploads/";
+            if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+
+            // ambil ekstensi dan slug nama anggota
+            $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+            $namaAnggota = $iuran['nama_anggota'];
+            $slugNama = slugify($namaAnggota);
+            $tanggalFile = date('Ymd', strtotime($tanggal_bayar));
+            $filename = "toktokripe-{$slugNama}-{$tanggalFile}." . $ext;
+            $targetFile = $targetDir . $filename;
+
+            // jika file dengan nama sama sudah ada, tambahkan suffix unik
+            $counter = 1;
+            $base = pathinfo($filename, PATHINFO_FILENAME);
+            while (file_exists($targetFile)) {
+                $filename = "{$base}-{$counter}." . $ext;
+                $targetFile = $targetDir . $filename;
+                $counter++;
+            }
+
+            // hapus file lama jika ada dan bukan kosong
+            if (!empty($bukti_lama) && file_exists($targetDir . $bukti_lama)) {
+                @unlink($targetDir . $bukti_lama);
+            }
+
+            if (move_uploaded_file($_FILES["bukti"]["tmp_name"], $targetFile)) {
+                $bukti = $filename;
+            } else {
+                $error = "Gagal mengunggah bukti pembayaran.";
+            }
+        }
+
+        // update db jika tidak ada error
+        if (empty($error)) {
+            try {
+                $stmtUpd = $pdo->prepare("
+                    UPDATE iuran
+                    SET tanggal_bayar = ?, toktok = ?, sukarela = ?, keterangan = ?, bukti = ?
+                    WHERE id = ?
+                ");
+                $stmtUpd->execute([
+                    $tanggal_bayar,
+                    $toktok,
+                    $sukarela,
+                    $keterangan,
+                    $bukti,
+                    $id
+                ]);
+                // refresh data yang ditampilkan
+                $stmt->execute([$id]);
+                $iuran = $stmt->fetch(PDO::FETCH_ASSOC);
+                header('Location: toktok-proses.php');
+                exit;
+            } catch (PDOException $e) {
+                $error = "Database error: " . $e->getMessage();
+            }
+        }
     }
 }
+
 ?>
 
 <!doctype html>
@@ -70,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!--begin::Primary Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="title" content="Admin | Panitia Bona Taon PTS" />
-    <meta name="author" content="El - Total" />
+    <meta name="author" content="Kiel st" />
     <meta
         name="description"
         content="Admin Panitia Bona Taon PTS" />
@@ -134,13 +200,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Edit Event</h3>
+                            <h3 class="mb-0">Edit toktok-proses</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="events.php">Events</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Edit Event</li>
+                                <li class="breadcrumb-item"><a href="toktok-proses.php">toktok-proses</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Edit Data</li>
                             </ol>
                         </div>
                     </div>
@@ -160,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Event Information</div>
+                                    <div class="card-title">toktok-proses Information</div>
                                 </div>
                                 <!--end::Header-->
                                 <?php if ($error): ?>
@@ -170,38 +236,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <form method="POST" enctype="multipart/form-data">
                                     <!--begin::Body-->
                                     <div class="card-body">
+                                        <!-- supaya anggota tidak bisa diubah tapi server tahu idnya -->
+                                        <input type="hidden" name="anggota_id" value="<?= htmlspecialchars($iuran['anggota_id']) ?>">
+                                        <input type="hidden" name="bukti_lama" value="<?= htmlspecialchars($iuran['bukti'] ?? '') ?>">
+
                                         <div class="mb-3">
-                                            <label for="title" class="form-label">Title</label>
-                                            <input
-                                                type="text" class="form-control" name="title" id="title" aria-describedby="title" value="<?= htmlspecialchars($event['title']) ?>" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="day" class="form-label">Day</label>
-                                            <select class="form-select" name="day" id="day">
-                                                <option disabled value="">Choose ...</option>
-                                                <option value="Monday" <?= ($event['day'] === 'Monday') ? 'selected' : '' ?>>Monday</option>
-                                                <option value="Tuesday" <?= ($event['day'] === 'Tuesday') ? 'selected' : '' ?>>Tuesday</option>
-                                                <option value="Wednesday" <?= ($event['day'] === 'Wednesday') ? 'selected' : '' ?>>Wednesday</option>
-                                                <option value="Thursday" <?= ($event['day'] === 'Thursday') ? 'selected' : '' ?>>Thursday</option>
-                                                <option value="Friday" <?= ($event['day'] === 'Friday') ? 'selected' : '' ?>>Friday</option>
-                                                <option value="Saturday" <?= ($event['day'] === 'Saturday') ? 'selected' : '' ?>>Saturday</option>
-                                                <option value="Sunday" <?= ($event['day'] === 'Sunday') ? 'selected' : '' ?>>Sunday</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a valid Day.</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="description" class="form-label">Description</label>
-                                            <textarea class="form-control" name="description" id="description" aria-label="description"><?= htmlspecialchars($event['description']) ?></textarea>
+                                            <label class="form-label">Nama Anggota</label>
+                                            <input type="text" class="form-control" value="<?= htmlspecialchars($iuran['nama_anggota']) ?>" disabled>
                                         </div>
 
                                         <div class="mb-3">
-                                            <label for="status" class="form-label">Status</label>
-                                            <select class="form-select" name="status" id="status">
-                                                <option disabled value="">Choose ...</option>
-                                                <option value="1" <?= ($event['status'] === '1') ? 'selected' : '' ?>>Post</option>
-                                                <option value="0" <?= ($event['status'] === '0') ? 'selected' : '' ?>>Draft</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a valid status Type.</div>
+                                            <label class="form-label">Tanggal Bayar</label>
+                                            <input type="date" name="tanggal_bayar" class="form-control" required value="<?= htmlspecialchars($iuran['tanggal_bayar']) ?>">
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Toktok (Rp)</label>
+                                                <input type="number" name="toktok" class="form-control" min="0" value="<?= htmlspecialchars($iuran['toktok']) ?>">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Sukarela (Rp)</label>
+                                                <input type="number" name="sukarela" class="form-control" min="0" value="<?= htmlspecialchars($iuran['sukarela']) ?>">
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Keterangan</label>
+                                            <textarea name="keterangan" class="form-control" rows="2"><?= htmlspecialchars($iuran['keterangan']) ?></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Bukti Pembayaran (ganti jika perlu)</label>
+                                            <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                                            <?php if (!empty($iuran['bukti'])): ?>
+                                                <p class="mt-2">File saat ini:
+                                                    <a href="uploads/<?= htmlspecialchars($iuran['bukti']) ?>" target="_blank"><?= htmlspecialchars($iuran['bukti']) ?></a>
+                                                </p>
+                                            <?php endif; ?>
                                         </div>
 
 
@@ -210,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <!--begin::Footer-->
                                     <div class="card-footer">
                                         <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="events.php" class="float-end btn btn-secondary">Back</a>
+                                        <a href="toktok-proses.php" class="float-end btn btn-secondary">Back</a>
                                     </div>
                                     <!--end::Footer-->
                                 </form>

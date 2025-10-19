@@ -18,39 +18,41 @@ function slugify($text)
 
     return $text ?: 'n-a';
 }
-// Cek apakah admin sudah login
+// Cek jika admin sudah login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
-$error = '';
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $stmt = $pdo->prepare("SELECT * FROM anggota WHERE id = ?");
+    $stmt->execute([$id]);
+    $anggota = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    if (!$anggota) {
+        header('Location: anggota.php');
+        exit;
+    }
+} else {
+    header('Location: anggota.php');
+    exit;
+}
+
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     // Ambil dan trim semua input
     $nama           = trim($_POST['nama'] ?? '');
     $posisi       = trim($_POST['posisi'] ?? '');
 
-    // Validasi input minimal yang diperlukan
     if ($nama && $posisi) {
-        try {
-            $stmt = $pdo->prepare("
-                INSERT INTO anggota 
-                (nama, jabatan)
-                VALUES (?, ?)
-            ");
-            $stmt->execute([
-                $nama,
-                $posisi
-            ]);
-
-            header('Location: anggota.php');
-            exit;
-        } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
-        }
+        $stmt = $pdo->prepare("UPDATE anggota SET nama = ?, jabatan = ? WHERE id = ?");
+        $stmt->execute([$nama, $posisi, $id]);
+        header('Location: anggota.php');
+        exit;
     } else {
-        $error = 'Please fill in all required fields (Nama and Posisi).';
+        $error = 'Nama, Posisi fields are required.';
     }
 }
 ?>
@@ -65,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!--begin::Primary Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="title" content="Admin | Panitia Bona Taon PTS" />
-    <meta name="author" content="El - Total" />
+    <meta name="author" content="Kiel st" />
     <meta
         name="description"
         content="Admin Panitia Bona Taon PTS" />
@@ -129,13 +131,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Anggota</h3>
+                            <h3 class="mb-0">Edit Anggota</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
                                 <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Anggota</li>
+                                <li class="breadcrumb-item active" aria-current="page">Edit Anggota</li>
                             </ol>
                         </div>
                     </div>
@@ -158,7 +160,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <div class="card-title">Anggota Information</div>
                                 </div>
                                 <!--end::Header-->
-
                                 <?php if ($error): ?>
                                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                                 <?php endif; ?>
@@ -169,17 +170,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <div class="mb-3">
                                             <label for="nama" class="form-label">Nama</label>
                                             <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
+                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" value="<?= htmlspecialchars($anggota['nama']) ?>" required />
                                         </div>
                                         <div class="mb-3">
-                                            <label for="day" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi" required>
-                                                <option selected disabled value="">Choose ...</option>
-                                                <option value="hula">Hula hula</option>
-                                                <option value="boru">Boru</option>
-                                                <option value="bere">Bere & Ibebere</option>
+                                            <label for="posisi" class="form-label">Posisi</label>
+                                            <select class="form-select" name="posisi" id="posisi">
+                                                <option disabled value="">Choose ...</option>
+                                                <option value="hula" <?= ($anggota['jabatan'] === 'hula') ? 'selected' : '' ?>>Hula hula</option>
+                                                <option value="boru" <?= ($anggota['jabatan'] === 'boru') ? 'selected' : '' ?>>Boru</option>
+                                                <option value="Bere" <?= ($anggota['jabatan'] === 'bere') ? 'selected' : '' ?>>Bere & Ibebere</option>
                                             </select>
-                                            <div class="invalid-feedback">Please select a valid posisi Type.</div>
+                                            <div class="invalid-feedback">Please select a valid Posisi.</div>
                                         </div>
 
 
@@ -201,7 +202,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </main>
         <?php include 'footer.php' ?>
     </div>
-
 
     <!-- DataTables JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
@@ -258,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         });
     </script>
+
 </body>
 
 </html>

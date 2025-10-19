@@ -42,7 +42,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="./index2.html" class="nav-link active">
+                            <a href="./index2.html" class="nav-link ">
                                 <i class="nav-icon bi bi-circle"></i>
                                 <p>Dashboard v2</p>
                             </a>
@@ -55,12 +55,37 @@
                         </li>
                     </ul> -->
                 </li>
-                <li class="nav-item">
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon bi bi-cash-coin"></i>
+                        <p>
+                            Tok-tok Ripe
+                            <i class="nav-arrow bi bi-chevron-right"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="toktok.php" class="nav-link">
+                                <i class="bi bi-circle"></i>
+                                <p>Data Tok-tok Ripe</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="toktok-proses.php" class="nav-link">
+                                <i class="bi bi-circle"></i>
+                                <p>Proses Pembayaran</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+
+                <!-- <li class="nav-item">
                     <a href="restaurants.php" class="nav-link">
                         <i class="nav-icon bi bi-box-seam-fill"></i>
                         <p>Restaurants</p>
                     </a>
-                </li>
+                </li> -->
                 <!-- <li class="nav-item">
                     <a href="menu.php" class="nav-link">
                         <i class="nav-icon bi bi-box-seam-fill"></i>
@@ -86,12 +111,12 @@
                         <p>Reservations</p>
                     </a>
                 </li> -->
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a href="review.php" class="nav-link">
                         <i class="nav-icon bi bi-box-seam-fill"></i>
                         <p>Review</p>
                     </a>
-                </li>
+                </li> -->
                 <li class="nav-item">
                     <a href="anggota.php" class="nav-link">
                         <i class="nav-icon bi bi-person-fill"></i>

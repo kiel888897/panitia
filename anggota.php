@@ -17,7 +17,7 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Admin | Rote Events</title>
+    <title>Admin | Panitia Bona Taon PTS</title>
     <!--begin::Primary Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="title" content="Admin | Panitia Bona Taon PTS" />
@@ -127,7 +127,19 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 <tr>
                                                     <td><?= $i++ ?></td>
                                                     <td><?= htmlspecialchars(ucwords($anggota['nama'])) ?></td>
-                                                    <td><?= htmlspecialchars(ucwords($anggota['jabatan'])) ?></td>
+                                                    <td>
+                                                        <?php
+                                                        $jabatan = strtolower($anggota['jabatan']); // pastikan huruf kecil semua dulu
+                                                        if ($jabatan === 'hula') {
+                                                            echo 'Hula Hula';
+                                                        } elseif ($jabatan === 'bere') {
+                                                            echo 'Bere & Ibebere';
+                                                        } else {
+                                                            echo ucfirst($jabatan); // default: misal Boru
+                                                        }
+                                                        ?>
+                                                    </td>
+
 
                                                     <td>
                                                         <div class="btn-group" role="group" aria-label="Actions">
@@ -160,8 +172,8 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Event Approved!',
-                text: 'The Event has been successfully approved and is now visible to the public.',
+                title: 'Anggota Approved!',
+                text: 'The Anggota has been successfully approved and is now visible to the public.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });
@@ -170,8 +182,8 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Event Deleted!',
-                text: 'The Event has been successfully removed from the system.',
+                title: 'Anggota Deleted!',
+                text: 'The Anggota has been successfully removed from the system.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });

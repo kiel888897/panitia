@@ -10,12 +10,12 @@ if (!isset($_SESSION['admin_id'])) {
 if (isset($_GET['id'])) {
     $id = (int) $_GET['id'];
 
-    $stmt = $pdo->prepare("DELETE FROM events WHERE id = :id");
+    $stmt = $pdo->prepare("DELETE FROM iuran WHERE id = :id");
     $stmt->execute([':id' => $id]);
 
-    header('Location: events.php?deleted=1');
+    header('Location: toktok-proses.php?deleted=1');
     exit;
 } else {
-    header('Location: events.php?error=1');
+    header('Location: toktok-proses.php?error=1');
     exit;
 }

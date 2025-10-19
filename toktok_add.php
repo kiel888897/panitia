@@ -1,56 +1,69 @@
 <?php
 session_start();
 require_once 'db.php';
-function slugify($text)
-{
-    // Ganti karakter non huruf/angka dengan strip
-    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
-    $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
-    $text = trim($text, '-');
-    // Hapus duplikat strip
-    $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
 
-    return $text ?: 'n-a';
-}
-// Cek apakah admin sudah login
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $error = '';
+$success = '';
+
+// Ambil data anggota untuk dropdown
+$anggotaStmt = $pdo->query("SELECT id, nama FROM anggota ORDER BY nama ASC");
+$anggotas = $anggotaStmt->fetchAll(PDO::FETCH_ASSOC);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Ambil dan trim semua input
-    $nama           = trim($_POST['nama'] ?? '');
-    $posisi       = trim($_POST['posisi'] ?? '');
+    $anggota_id     = $_POST['anggota_id'] ?? '';
+    $tanggal_bayar  = $_POST['tanggal_bayar'] ?? '';
+    $toktok         = $_POST['toktok'] ?? 0;
+    $sukarela       = $_POST['sukarela'] ?? 0;
+    $keterangan     = trim($_POST['keterangan'] ?? '');
+    $bukti          = '';
 
-    // Validasi input minimal yang diperlukan
-    if ($nama && $posisi) {
+    // Upload bukti jika ada
+    if (!empty($_FILES['bukti']['name'])) {
+        $targetDir = "uploads/";
+        if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+
+        // Ambil ekstensi file
+        $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+
+        // Ambil nama anggota untuk dijadikan bagian nama file
+        $stmtNama = $pdo->prepare("SELECT nama FROM anggota WHERE id = ?");
+        $stmtNama->execute([$anggota_id]);
+        $namaAnggota = $stmtNama->fetchColumn();
+        $namaAnggotaSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($namaAnggota)); // buat aman untuk nama file
+
+        // Format nama file: toktokripe-namaanggota-tanggal.ext
+        $tanggalFile = date('Ymd', strtotime($tanggal_bayar));
+        $filename = "toktokripe-" . $namaAnggotaSlug . "-" . $tanggalFile . "." . $ext;
+        $targetFile = $targetDir . $filename;
+
+        if (move_uploaded_file($_FILES["bukti"]["tmp_name"], $targetFile)) {
+            $bukti = $filename;
+        } else {
+            $error = "Gagal upload bukti pembayaran.";
+        }
+    }
+
+
+    if (!$error && $anggota_id && $tanggal_bayar) {
         try {
             $stmt = $pdo->prepare("
-                INSERT INTO anggota 
-                (nama, jabatan)
-                VALUES (?, ?)
+                INSERT INTO iuran (anggota_id, tanggal_bayar, toktok, sukarela, keterangan, bukti)
+                VALUES (?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([
-                $nama,
-                $posisi
-            ]);
-
-            header('Location: anggota.php');
+            $stmt->execute([$anggota_id, $tanggal_bayar, $toktok, $sukarela, $keterangan, $bukti]);
+            header('Location: toktok-proses.php');
             exit;
         } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
+            $error = "Database error: " . $e->getMessage();
         }
     } else {
-        $error = 'Please fill in all required fields (Nama and Posisi).';
+        if (!$anggota_id || !$tanggal_bayar) $error = "Harap isi semua field wajib.";
     }
 }
 ?>
@@ -129,13 +142,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Anggota</h3>
+                            <h3 class="mb-0">Add New Tok-tok ripe</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Anggota</li>
+                                <li class="breadcrumb-item"><a href="toktok-proses.php">Tok-tok ripe</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Add Tok-tok ripe</li>
                             </ol>
                         </div>
                     </div>
@@ -155,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Anggota Information</div>
+                                    <div class="card-title">Tok-tok ripe Information</div>
                                 </div>
                                 <!--end::Header-->
 
@@ -167,28 +180,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <!--begin::Body-->
                                     <div class="card-body">
                                         <div class="mb-3">
-                                            <label for="nama" class="form-label">Nama</label>
-                                            <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="day" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi" required>
-                                                <option selected disabled value="">Choose ...</option>
-                                                <option value="hula">Hula hula</option>
-                                                <option value="boru">Boru</option>
-                                                <option value="bere">Bere & Ibebere</option>
+                                            <label class="form-label">Nama Anggota</label>
+                                            <select name="anggota_id" class="form-select" required>
+                                                <option value="">-- Pilih Anggota --</option>
+                                                <?php foreach ($anggotas as $a): ?>
+                                                    <option value="<?= $a['id'] ?>"><?= htmlspecialchars($a['nama']) ?></option>
+                                                <?php endforeach; ?>
                                             </select>
-                                            <div class="invalid-feedback">Please select a valid posisi Type.</div>
                                         </div>
 
+                                        <div class="mb-3">
+                                            <label class="form-label">Tanggal Bayar</label>
+                                            <input type="date" name="tanggal_bayar" class="form-control" required>
+                                        </div>
 
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Toktok (Rp)</label>
+                                                <input type="number" name="toktok" class="form-control" min="0" placeholder="Jumlah toktok">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Sukarela (Rp)</label>
+                                                <input type="number" name="sukarela" class="form-control" min="0" placeholder="Jumlah sukarela">
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Keterangan</label>
+                                            <textarea name="keterangan" class="form-control" rows="2" placeholder="Catatan tambahan..."></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Upload Bukti (opsional)</label>
+                                            <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                                        </div>
                                     </div>
                                     <!--end::Body-->
                                     <!--begin::Footer-->
                                     <div class="card-footer">
                                         <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="anggota.php" class="float-end btn btn-secondary">Back</a>
+                                        <a href="toktok-proses.php" class="float-end btn btn-secondary">Back</a>
                                     </div>
                                     <!--end::Footer-->
                                 </form>
