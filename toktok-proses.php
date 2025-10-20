@@ -72,7 +72,6 @@ $iurans = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <tr>
                                         <th>#</th>
                                         <th>Nama Anggota</th>
-                                        <th>Jabatan</th>
                                         <th>Tanggal Bayar</th>
                                         <th>Iuran Toktok (Rp)</th>
                                         <th>Sukarela (Rp)</th>
@@ -87,18 +86,6 @@ $iurans = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <tr>
                                             <td><?= $i++ ?></td>
                                             <td><?= htmlspecialchars($row['nama_anggota']) ?></td>
-                                            <td>
-                                                <?php
-                                                $jabatan = strtolower($row['jabatan']);
-                                                if ($jabatan === 'hula') {
-                                                    echo 'Hula Hula';
-                                                } elseif ($jabatan === 'bere') {
-                                                    echo 'Bere & Ibebere';
-                                                } else {
-                                                    echo ucfirst($jabatan);
-                                                }
-                                                ?>
-                                            </td>
                                             <td><?= htmlspecialchars(date('d-m-Y', strtotime($row['tanggal_bayar']))) ?></td>
                                             <td><?= number_format($row['toktok'], 0, ',', '.') ?></td>
                                             <td><?= number_format($row['sukarela'], 0, ',', '.') ?></td>
