@@ -1,16 +1,72 @@
 <?php
-$menu = 'baju';
+$menu = 'silua-proses';
 session_start();
 require_once 'db.php';
 
-// Cek jika admin sudah login
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
-$stmt = $pdo->query("SELECT * FROM anggotas  ORDER BY id DESC");
-$anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$error = '';
+$success = '';
+
+// Ambil daftar silua
+$siluaStmt = $pdo->query("
+    SELECT a.id, a.nama
+    FROM silua a
+    ORDER BY a.nama ASC
+");
+$siluas = $siluaStmt->fetchAll(PDO::FETCH_ASSOC);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $silua_id = $_POST['silua_id'] ?? '';
+    $jumlah = (float)($_POST['jumlah'] ?? 0);
+    $tanggal = $_POST['tanggal'] ?? date('Y-m-d');
+    $bukti = '';
+
+    // Upload bukti jika ada
+    if (!empty($_FILES['bukti']['name'])) {
+        $targetDir = "uploads/";
+        if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+
+        $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+
+        // Ambil nama silua untuk nama file
+        $stmtNama = $pdo->prepare("SELECT nama FROM silua WHERE id = ?");
+        $stmtNama->execute([$silua_id]);
+        $namaSilua = $stmtNama->fetchColumn();
+        $namaSiluaSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($namaSilua ?: 'silua'));
+
+        $tanggalFile = date('Ymd', strtotime($tanggal));
+        $filename = "silua-" . $namaSiluaSlug . "-" . $tanggalFile . "." . $ext;
+        $targetFile = $targetDir . $filename;
+
+        if (move_uploaded_file($_FILES["bukti"]["tmp_name"], $targetFile)) {
+            $bukti = $filename;
+        } else {
+            $error = "Gagal upload bukti pembayaran.";
+        }
+    }
+
+    // Insert ke database
+    if (!$error && $silua_id && $jumlah > 0) {
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO bayar_silua (silua_id, jumlah, tanggal, bukti)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([$silua_id, $jumlah, $tanggal, $bukti]);
+            header('Location: silua-proses.php');
+            exit;
+        } catch (PDOException $e) {
+            $error = "Database error: " . $e->getMessage();
+        }
+    } else {
+        if (!$silua_id || $jumlah <= 0) $error = "Harap isi semua field wajib.";
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -86,12 +142,13 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Anggota</h3>
+                            <h3 class="mb-0">Add Pembayaran Silua</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Anggota</li>
+                                <li class="breadcrumb-item"><a href="silua-proses.php">Pembayaran Silua</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Add Pembayaran Silua</li>
                             </ol>
                         </div>
                     </div>
@@ -106,100 +163,64 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="container-fluid">
                     <!--begin::Row-->
                     <div class="row">
-                        <div class="col-12">
-                            <!-- Default box -->
-                            <div class="card">
-
-                                <div class="card-body">
-                                    <a href="anggota_add.php" class="btn btn-success">Add New anggota</a>
-
-                                    <table class="table table-bordered" id="eventTable">
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Nama</th>
-                                                <th>Posisi</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php $i = 1;
-                                            foreach ($anggotas as $anggota): ?>
-                                                <tr>
-                                                    <td><?= $i++ ?></td>
-                                                    <td><?= htmlspecialchars(ucwords($anggota['nama'])) ?></td>
-                                                    <td>
-                                                        <?php
-                                                        $jabatan = strtolower($anggota['jabatan']); // pastikan huruf kecil semua dulu
-                                                        if ($jabatan === 'hula') {
-                                                            echo 'Hula Hula';
-                                                        } elseif ($jabatan === 'bere') {
-                                                            echo 'Bere & Ibebere';
-                                                        } else {
-                                                            echo ucfirst($jabatan); // default: misal Boru
-                                                        }
-                                                        ?>
-                                                    </td>
-
-
-                                                    <td>
-                                                        <div class="btn-group" role="group" aria-label="Actions">
-                                                            <a href="anggota_edit.php?id=<?= $anggota['id'] ?>" class="btn btn-warning btn-sm" aria-label="Edit anggota" title="Edit anggota">✏️</a>
-                                                            <a href="anggota_delete.php?id=<?= $anggota['id'] ?>" class="btn btn-danger btn-sm" aria-label="Delete anggota" title="Delete anggota" onclick="return confirm('Are you sure?')">🗑️</a>
-                                                        </div>
-                                                    </td>
-
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
+                        <div class="col-md-12">
+                            <!--begin::Quick Example-->
+                            <div class="card card-primary card-outline mb-4">
+                                <!--begin::Header-->
+                                <div class="card-header">
+                                    <div class="card-title">Pembayaran Silua Information</div>
                                 </div>
+                                <!--end::Header-->
 
-                                <!-- /.card-body -->
-                                <!-- <div class="card-footer">Footer</div> -->
-                                <!-- /.card-footer-->
+                                <?php if ($error): ?>
+                                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                                <?php endif; ?>
+                                <!--begin::Form-->
+
+                                <form method="POST" enctype="multipart/form-data">
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nama Silua</label>
+                                            <select name="silua_id" class="form-select" required>
+                                                <option value="">-- Pilih Silua --</option>
+                                                <?php foreach ($siluas as $s): ?>
+                                                    <option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nama']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Tanggal Bayar</label>
+                                            <input type="date" name="tanggal" class="form-control" value="<?= htmlspecialchars(date('Y-m-d')) ?>" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Jumlah Pembayaran (Rp)</label>
+                                            <input type="number" name="jumlah" class="form-control" min="0" placeholder="Contoh: 100000" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Upload Bukti (opsional)</label>
+                                            <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                                        </div>
+                                    </div>
+
+                                    <div class="card-footer">
+                                        <button type="submit" class="btn btn-primary">Simpan</button>
+                                        <a href="silua-proses.php" class="btn btn-secondary float-end">Kembali</a>
+                                    </div>
+                                </form>
+                                <!--end::Form-->
                             </div>
+
                         </div>
                     </div>
                 </div>
-            </div>
         </main>
         <?php include 'footer.php' ?>
     </div>
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <?php if (isset($_GET['approved'])): ?>
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Anggota Approved!',
-                text: 'The Anggota has been successfully approved and is now visible to the public.',
-                confirmButtonText: 'OKAY',
-                confirmButtonColor: '#28a745'
-            });
-        </script>
-    <?php elseif (isset($_GET['deleted'])): ?>
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Anggota Deleted!',
-                text: 'The Anggota has been successfully removed from the system.',
-                confirmButtonText: 'OKAY',
-                confirmButtonColor: '#28a745'
-            });
-        </script>
-    <?php elseif (isset($_GET['error'])): ?>
-        <script>
-            Swal.fire({
-                icon: 'warning',
-                title: 'Action Failed',
-                text: 'There was a problem processing your request. Please try again.',
-                confirmButtonText: 'OKAY',
-                confirmButtonColor: '#dc3545'
-            });
-        </script>
-    <?php endif; ?>
+
     <!-- DataTables JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
@@ -244,7 +265,7 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 paging: true, // Aktifkan pagination
                 searching: true, // Aktifkan fitur pencarian
                 lengthChange: false, // Menonaktifkan pilihan jumlah item per halaman
-                pageLength: 10, // Menentukan jumlah baris per halaman
+                pageLength: 5, // Menentukan jumlah baris per halaman
                 language: {
                     search: "Cari:",
                     paginate: {
@@ -255,7 +276,6 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
             });
         });
     </script>
-
 </body>
 
 </html>

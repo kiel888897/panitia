@@ -115,8 +115,8 @@
 
                 <?php } ?>
                 <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
-                    <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
-                        <a href="#" class="nav-link <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'active'; ?>">
+                    <li class="nav-item has-treeview  <?php if ($menu === 'silua' || $menu === 'silua-proses') echo 'menu-open'; ?>">
+                        <a href="#" class="nav-link <?php if ($menu === 'silua' || $menu === 'silua-proses') echo 'active'; ?>">
                             <i class="nav-icon bi bi-cash-coin"></i>
                             <p>
                                 Silua
@@ -125,15 +125,15 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="#" class="nav-link <?php if ($menu === 'keluar') echo 'active'; ?>">
+                                <a href="silua.php" class="nav-link <?php if ($menu === 'silua') echo 'active'; ?>">
                                     <i class="bi bi-circle"></i>
                                     <p>Data Silua</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" class="nav-link <?php if ($menu === 'keluar-proses') echo 'active'; ?>">
+                                <a href="silua-proses.php" class="nav-link <?php if ($menu === 'silua-proses') echo 'active'; ?>">
                                     <i class="bi bi-circle"></i>
-                                    <p>Proses Silua</p>
+                                    <p>Proses Pembayaran</p>
                                 </a>
                             </li>
                         </ul>

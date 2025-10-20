@@ -1,24 +1,28 @@
 <?php
+$menu = 'silua-proses';
 session_start();
 require_once 'db.php';
 
-// Cek jika admin sudah login
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
-if (isset($_GET['id'])) {
-    $id = $_GET['id'];
-    $stmt = $pdo->prepare("SELECT * FROM menus WHERE restaurant_id  = ?");
-    $stmt->execute([$id]);
-    $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $restaurant_stmt  = $pdo->prepare("SELECT * FROM restaurants WHERE id = ?");
-    $restaurant_stmt->execute([$id]);
-    $restaurant = $restaurant_stmt->fetch(PDO::FETCH_ASSOC);
-} else {
-    header('Location: restaurants.php');
-    exit;
-}
+$stmt = $pdo->query("
+    SELECT 
+        bs.id,
+        s.nama,
+        bs.jumlah,
+        bs.tanggal,
+        bs.bukti
+    FROM bayar_silua bs
+    JOIN silua s ON bs.silua_id = s.id
+    ORDER BY bs.tanggal DESC
+");
+$bayar_silua = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -94,13 +98,12 @@ if (isset($_GET['id'])) {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Menu Restaurants <?= htmlspecialchars(ucwords($restaurant['name'])) ?></h3>
+                            <h3 class="mb-0">Pembayaran Silua PTS</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="restaurants.php">Restaurants</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Menu Restaurants</li>
+                                <li class="breadcrumb-item active" aria-current="page">Pembayaran Silua PTS</li>
                             </ol>
                         </div>
                     </div>
@@ -118,52 +121,39 @@ if (isset($_GET['id'])) {
                         <div class="col-12">
                             <!-- Default box -->
                             <div class="card">
-                                <!-- <div class="card-header">
-                                    <h3 class="card-title">Title</h3>
-                                    <div class="card-tools">
-                                        <button
-                                            type="button"
-                                            class="btn btn-tool"
-                                            data-lte-toggle="card-collapse"
-                                            title="Collapse">
-                                            <i data-lte-icon="expand" class="bi bi-plus-lg"></i>
-                                            <i data-lte-icon="collapse" class="bi bi-dash-lg"></i>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="btn btn-tool"
-                                            data-lte-toggle="card-remove"
-                                            title="Remove">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </div>
-                                </div> -->
-                                <div class="card-body">
-                                    <a href="add_menu.php?id=<?= htmlspecialchars($restaurant['id']) ?>" class="btn btn-success">Add New Menu</a>
 
-                                    <table class="table table-bordered" id="restaurantTable">
-                                        <thead>
+                                <div class="card-body">
+                                    <a href="silua_add.php" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Tambah Pembayaran</a>
+                                    <table class="table table-bordered" id="siluaTable">
+                                        <thead class="table-light">
                                             <tr>
                                                 <th>#</th>
-                                                <th>Name</th>
-                                                <th>Description</th>
-                                                <th>Price</th>
-                                                <th>Status</th>
-                                                <th>Actions</th>
+                                                <th>Nama</th>
+                                                <th>Jumlah Bayar (Rp)</th>
+                                                <th>Tanggal</th>
+                                                <th>Bukti</th>
+                                                <th>Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <?php $i = 1;
-                                            foreach ($menus as $menu): ?>
+                                            foreach ($bayar_silua as $row): ?>
                                                 <tr>
                                                     <td><?= $i++ ?></td>
-                                                    <td><?= htmlspecialchars(ucwords($menu['name'])) ?></td>
-                                                    <td><?= htmlspecialchars(ucwords($menu['description'])) ?></td>
-                                                    <td>Rp <?= htmlspecialchars(number_format($menu['price'])) ?></td>
-                                                    <td><?= htmlspecialchars(ucwords($menu['status'])) ?></td>
+                                                    <td><b><?= htmlspecialchars($row['nama']) ?></b></td>
+                                                    <td>Rp <?= number_format($row['jumlah'], 0, ',', '.') ?></td>
+                                                    <td><?= htmlspecialchars(date('d-m-y', strtotime($row['tanggal']))) ?></td>
                                                     <td>
-                                                        <a href="edit_menu.php?id=<?= $restaurant['id'] ?>&menu_id=<?= $menu['id'] ?>" class="btn btn-warning btn-sm">Edit</a>
-                                                        <a href="delete_menu.php?id=<?= $restaurant['id'] ?>&menu_id=<?= $menu['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                                                        <?php if (!empty($row['bukti'])): ?>
+                                                            <a href="uploads/<?= htmlspecialchars($row['bukti']) ?>" target="_blank">Lihat Bukti</a>
+                                                        <?php else: ?>
+                                                            -
+                                                        <?php endif; ?>
+                                                    </td>
+
+                                                    <td>
+                                                        <a href="silua_edit.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-sm">✏️</a>
+                                                        <a href="silua_delete.php?id=<?= $row['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Yakin hapus data ini?')">🗑️</a>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -183,7 +173,39 @@ if (isset($_GET['id'])) {
         <?php include 'footer.php' ?>
     </div>
 
-
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <?php if (isset($_GET['approved'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Approved!',
+                text: 'The Data has been successfully approved and is now visible to the public.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    <?php elseif (isset($_GET['deleted'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Deleted!',
+                text: 'The Data has been successfully removed from the system.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    <?php elseif (isset($_GET['error'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Action Failed',
+                text: 'There was a problem processing your request. Please try again.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#dc3545'
+            });
+        </script>
+    <?php endif; ?>
     <!-- DataTables JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
@@ -201,7 +223,6 @@ if (isset($_GET['id'])) {
         integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
         crossorigin="anonymous"></script>
     <script src="assets/js/adminlte.js"></script>
-
     <script>
         const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
         const Default = {
@@ -240,6 +261,7 @@ if (isset($_GET['id'])) {
             });
         });
     </script>
+
 </body>
 
 </html>
