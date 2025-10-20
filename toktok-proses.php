@@ -132,7 +132,7 @@ $iurans = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 <th>#</th>
                                                 <th>Nama Anggota</th>
                                                 <th>Tanggal Bayar</th>
-                                                <th>Iuran Toktok (Rp)</th>
+                                                <th>Tok-tok ripe (Rp)</th>
                                                 <th>Sukarela (Rp)</th>
                                                 <th>Keterangan</th>
                                                 <th>Bukti</th>

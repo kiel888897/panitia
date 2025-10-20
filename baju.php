@@ -17,20 +17,22 @@ if (!isset($_SESSION['admin_id'])) {
 */
 $stmt = $pdo->query("
     SELECT 
-        a.id, 
-        a.nama, 
-        a.hp, 
+        a.id AS anggota_id,
+        a.nama,
+        a.hp,
         a.alamat,
-        COUNT(*) AS total_items_rows,            -- baris item (bisa beberapa baris untuk 1 anggota)
-        SUM(oi.qty) AS total_qty,               -- total qty semua ukuran
+        SUM(oi.qty) AS total_qty,
         (SUM(oi.qty) * 100000) AS total_pesanan,
-        GROUP_CONCAT(CONCAT(oi.qty, oi.size) SEPARATOR ', ') AS pesanan
+        GROUP_CONCAT(CONCAT(oi.size, ' x', oi.qty) SEPARATOR ', ') AS pesanan,
+        COALESCE(SUM(bb.jumlah), 0) AS total_bayar
     FROM anggota a
     JOIN order_items oi ON oi.order_id = a.id
+    LEFT JOIN bayar_baju bb ON bb.anggota_id = a.id
     GROUP BY a.id
     ORDER BY a.nama ASC
 ");
 $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <!doctype html>
@@ -175,12 +177,24 @@ $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             <?php
                                             $i = 1;
                                             $rowClass = ''; // definisikan supaya tidak undefined
+
                                             foreach ($bajus as $row):
+                                                if ($row['total_bayar'] >= $row['total_pesanan']) {
+                                                    $status = "Lunas";
+                                                    $rowClass = "status-lunas";
+                                                } elseif ($row['total_bayar'] > 0) {
+                                                    $status = "Cicilan";
+                                                    $rowClass = "status-cicilan";
+                                                } else {
+                                                    $status = "Belum Bayar";
+                                                    $rowClass = "status-belum";
+                                                }
+
                                             ?>
                                                 <tr>
                                                     <td><?= $i++ ?></td>
                                                     <td>
-                                                        <?= htmlspecialchars($row['nama']) ?>
+                                                        <b class="<?= $rowClass ?>"> <?= htmlspecialchars($row['nama']) ?></b>
                                                     </td>
 
                                                     <td>
@@ -190,10 +204,16 @@ $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     <td>Rp <?= number_format($row['total_pesanan'], 0, ',', '.') ?></td>
                                                     <!-- Tidak ada kolom harga di order_items; tampilkan '-' atau ubah bila sudah ada harga -->
 
-                                                    <td>-</td>
+                                                    <td>Rp <?= number_format($row['total_bayar'], 0, ',', '.') ?></td>
+                                                    <td>
+                                                        <?php if ($row['total_bayar']  > 0): ?>
+                                                            <a target="_blank" href="baju_detail.php?id=<?= $row['anggota_id'] ?>&qty=<?= $row['total_qty'] ?>" class="btn btn-link p-0">Lihat Detail</a>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">-</span>
+                                                        <?php endif; ?>
+                                                    </td>
 
-                                                    <td>-</td>
-                                                    <td>-</td>
+                                                    <td><strong><?= $status ?></strong></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         </tbody>

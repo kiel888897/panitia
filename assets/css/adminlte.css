@@ -15377,3 +15377,6 @@ html.maximized-card {
 }
 
 /*# sourceMappingURL=adminlte.css.map */
+.status-lunas { color: green !important; }      /* hijau muda */
+.status-cicilan { color: orange !important; }    /* kuning muda */
+.status-belum { color: #000 !important; }

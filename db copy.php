@@ -1,8 +1,8 @@
 <?php
 $host = 'localhost';
-$dbname = 'villamon_resto';
-$user = 'villamon_resto';
-$pass = 't0t4lt34m'; // sesuaikan dengan password MySQL-mu
+$dbname = 'ogoh2_ptsbali';
+$user = 'ogoh2_ptsbali';
+$pass = 'Kiel@0804'; // sesuaikan dengan password MySQL-mu
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
