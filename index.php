@@ -35,17 +35,17 @@ $total_pengeluaran = $total2['total_pengeluaran'];
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <title>Admin | Panitia Bona Taon PTS</title>
+  <title>Panitia Bona Taon PTS</title>
   <!--begin::Primary Meta Tags-->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="title" content="Admin | Panitia Bona Taon PTS" />
+  <meta name="title" content="Panitia Bona Taon PTS" />
   <meta name="author" content="El - Total" />
   <meta
     name="description"
-    content="Admin Panitia Bona Taon PTS" />
+    content="Panitia Bona Taon PTS" />
   <meta
     name="keywords"
-    content="Admin Panitia Bona Taon PTS" />
+    content="Panitia Bona Taon PTS" />
 
   <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
   <!--end::Primary Meta Tags-->
