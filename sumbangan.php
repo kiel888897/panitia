@@ -1,60 +1,16 @@
 <?php
 session_start();
 require_once 'db.php';
-function slugify($text)
-{
-    // Ganti karakter non huruf/angka dengan strip
-    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
-    $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
-    $text = trim($text, '-');
-    // Hapus duplikat strip
-    $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
 
-    return $text ?: 'n-a';
-}
-// Cek apakah admin sudah login
+// Cek jika admin sudah login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Ambil dan trim semua input
-    $nama           = trim($_POST['nama'] ?? '');
-    $posisi       = trim($_POST['posisi'] ?? '');
-
-    // Validasi input minimal yang diperlukan
-    if ($nama && $posisi) {
-        try {
-            $stmt = $pdo->prepare("
-                INSERT INTO anggota 
-                (nama, jabatan)
-                VALUES (?, ?)
-            ");
-            $stmt->execute([
-                $nama,
-                $posisi
-            ]);
-
-            header('Location: anggota.php');
-            exit;
-        } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
-        }
-    } else {
-        $error = 'Please fill in all required fields (Nama and Posisi).';
-    }
-}
+$stmt = $pdo->query("SELECT * FROM sumbangan  ORDER BY id DESC");
+$sumbangans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
 <!doctype html>
 <html lang="en">
 <!--begin::Head-->
@@ -129,13 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Anggota</h3>
+                            <h3 class="mb-0">Sumbangan</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Anggota</li>
+                                <li class="breadcrumb-item active" aria-current="page">Sumbangan</li>
                             </ol>
                         </div>
                     </div>
@@ -150,59 +105,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="container-fluid">
                     <!--begin::Row-->
                     <div class="row">
-                        <div class="col-md-12">
-                            <!--begin::Quick Example-->
-                            <div class="card card-primary card-outline mb-4">
-                                <!--begin::Header-->
-                                <div class="card-header">
-                                    <div class="card-title">Anggota Information</div>
+                        <div class="col-12">
+                            <!-- Default box -->
+                            <div class="card">
+
+                                <div class="card-body">
+                                    <a href="sumbangan_add.php" class="btn btn-success">Add New Sumbangan</a>
+
+                                    <table class="table table-bordered" id="eventTable">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Nama</th>
+                                                <th>jenis</th>
+                                                <th>jumlah</th>
+                                                <th>keterangan</th>
+                                                <th>Tanggal</th>
+                                                <th>File</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $i = 1;
+                                            foreach ($sumbangans as $sumbangan): ?>
+                                                <tr>
+                                                    <td><?= $i++ ?></td>
+                                                    <td><?= htmlspecialchars(ucwords($sumbangan['nama'])) ?></td>
+                                                    <td><?= htmlspecialchars(ucwords($sumbangan['jenis'])) ?></td>
+                                                    <td><?= htmlspecialchars(ucwords($sumbangan['jumlah'])) ?></td>
+                                                    <td><?= (ucwords($sumbangan['keterangan'])) ?></td>
+                                                    <td><?= htmlspecialchars(ucwords($sumbangan['tanggal'])) ?></td>
+                                                    <td>
+                                                        <?php if (!empty($sumbangan['photo'])): ?>
+                                                            <a href="uploads/<?= htmlspecialchars(ucwords($sumbangan['photo'])) ?>" target="_blank">Lihat</a>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">-</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group" role="group" aria-label="Actions">
+                                                            <a href="sumbangan_edit.php?id=<?= $sumbangan['id'] ?>" class="btn btn-warning btn-sm" aria-label="Edit sumbangan" title="Edit sumbangan">✏️</a>
+                                                            <a href="sumbangan_delete.php?id=<?= $sumbangan['id'] ?>" class="btn btn-danger btn-sm" aria-label="Delete sumbangan" title="Delete sumbangan" onclick="return confirm('Are you sure?')">🗑️</a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <!--end::Header-->
 
-                                <?php if ($error): ?>
-                                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-                                <?php endif; ?>
-                                <!--begin::Form-->
-                                <form method="POST" enctype="multipart/form-data">
-                                    <!--begin::Body-->
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="nama" class="form-label">Nama</label>
-                                            <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="day" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi" required>
-                                                <option selected disabled value="">Choose ...</option>
-                                                <option value="hula">Hula hula</option>
-                                                <option value="boru">Boru</option>
-                                                <option value="bere">Bere & Ibebere</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a valid posisi Type.</div>
-                                        </div>
-
-
-                                    </div>
-                                    <!--end::Body-->
-                                    <!--begin::Footer-->
-                                    <div class="card-footer">
-                                        <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="anggota.php" class="float-end btn btn-secondary">Back</a>
-                                    </div>
-                                    <!--end::Footer-->
-                                </form>
-                                <!--end::Form-->
+                                <!-- /.card-body -->
+                                <!-- <div class="card-footer">Footer</div> -->
+                                <!-- /.card-footer-->
                             </div>
-
                         </div>
                     </div>
                 </div>
+            </div>
         </main>
         <?php include 'footer.php' ?>
     </div>
 
-
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <?php if (isset($_GET['approved'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Anggota Approved!',
+                text: 'The Anggota has been successfully approved and is now visible to the public.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    <?php elseif (isset($_GET['deleted'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Anggota Deleted!',
+                text: 'The Anggota has been successfully removed from the system.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    <?php elseif (isset($_GET['error'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Action Failed',
+                text: 'There was a problem processing your request. Please try again.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#dc3545'
+            });
+        </script>
+    <?php endif; ?>
     <!-- DataTables JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
@@ -247,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 paging: true, // Aktifkan pagination
                 searching: true, // Aktifkan fitur pencarian
                 lengthChange: false, // Menonaktifkan pilihan jumlah item per halaman
-                pageLength: 5, // Menentukan jumlah baris per halaman
+                pageLength: 10, // Menentukan jumlah baris per halaman
                 language: {
                     search: "Cari:",
                     paginate: {
@@ -258,6 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         });
     </script>
+
 </body>
 
 </html>

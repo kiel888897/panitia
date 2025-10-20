@@ -1,13 +1,5 @@
 <?php
-session_start();
 require_once 'db.php';
-
-// Cek login
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
 // Pastikan ada ID anggota
 if (!isset($_GET['id'])) {
     header('Location: toktok.php');
@@ -62,6 +54,9 @@ if ($totalToktok >= $targetToktok) {
 <head>
     <meta charset="utf-8">
     <title>Detail Iuran Toktok Ripe | Panitia Bona Taon PTS</title>
+
+
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSS -->
@@ -72,22 +67,13 @@ if ($totalToktok >= $targetToktok) {
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <div class="">
-        <?php include 'header.php'; ?>
-        <?php include 'sidebar.php'; ?>
 
         <main class="app-main">
             <div class="app-content-header">
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-sm-6">
-                            <h3 class="mb-0">Detail Iuran: <?= htmlspecialchars($anggota['nama']) ?></h3>
-                        </div>
-                        <div class="col-sm-6">
-                            <ol class="breadcrumb float-sm-end">
-                                <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="toktok.php">Toktok Ripe</a></li>
-                                <li class="breadcrumb-item active">Detail</li>
-                            </ol>
+                        <div class="col-sm-12">
+                            <h3 class="mb-0">Detail Tok-tok ripe: <?= htmlspecialchars($anggota['nama']) ?></h3>
                         </div>
                     </div>
                 </div>
@@ -101,7 +87,7 @@ if ($totalToktok >= $targetToktok) {
                         </div>
                         <div class="card-body">
                             <p><strong>Nama:</strong> <?= htmlspecialchars($anggota['nama']) ?></p>
-                            <p><strong>Jabatan:</strong>
+                            <p><strong>Posisi:</strong>
                                 <?php
                                 $jabatan = strtolower($anggota['jabatan']);
                                 if ($jabatan === 'hula') echo 'Hula Hula';
@@ -129,7 +115,6 @@ if ($totalToktok >= $targetToktok) {
                                         <th>Sukarela (Rp)</th>
                                         <th>Keterangan</th>
                                         <th>Bukti</th>
-                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -152,17 +137,12 @@ if ($totalToktok >= $targetToktok) {
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td>
-                                                    <a href="toktok_edit.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-                                                    <a href="toktok_delete.php?id=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus data ini?')" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
-                                                </td>
                                             </tr>
                                     <?php endforeach;
                                     endif; ?>
                                 </tbody>
                             </table>
 
-                            <a href="toktok.php" class="btn btn-secondary mt-3"><i class="bi bi-arrow-left"></i> Kembali</a>
                         </div>
                     </div>
                 </div>

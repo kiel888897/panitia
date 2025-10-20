@@ -7,7 +7,27 @@ if (!isset($_SESSION['admin_id'])) {
   header('Location: login.php');
   exit;
 }
+// echo "Halo, " . $_SESSION['nama_lengkap'] . " (Role ID: " . $_SESSION['role_id'] . ")";
+// Query gabungan untuk total pemasukan
+$query = "
+SELECT 
+    IFNULL((SELECT SUM(toktok + sukarela) FROM iuran), 0) +
+    IFNULL((SELECT SUM(jumlah) FROM sumbangan WHERE jenis = 'dana'), 0) +
+    IFNULL((SELECT SUM(jumlah) FROM bayar_silua), 0) AS total_pemasukan
+";
 
+$stmt = $pdo->query($query);
+$total = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Ambil nilai total pemasukan
+$total_pemasukan = $total['total_pemasukan'];
+
+
+// ===== TOTAL PENGELUARAN =====
+$queryPengeluaran = "SELECT IFNULL(SUM(jumlah), 0) AS total_pengeluaran FROM pengeluaran";
+$stmt2 = $pdo->query($queryPengeluaran);
+$total2 = $stmt2->fetch(PDO::FETCH_ASSOC);
+$total_pengeluaran = $total2['total_pengeluaran'];
 ?>
 <!doctype html>
 <html lang="en">
@@ -27,7 +47,7 @@ if (!isset($_SESSION['admin_id'])) {
     name="keywords"
     content="Admin Panitia Bona Taon PTS" />
 
-  <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.png">
+  <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
   <!--end::Primary Meta Tags-->
   <!--begin::Fonts-->
   <link
@@ -90,48 +110,48 @@ if (!isset($_SESSION['admin_id'])) {
       <!--begin::Container-->
       <div class="container-fluid">
 
-        <!--begin::Row-->
-        <div class="row">
+        <div class="row g-4">
+          <!-- CARD PEMASUKAN -->
           <div class="col-md-6">
-            <!-- PRODUCT LIST -->
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Total Pemasukan</h3>
-              </div>
-              <!-- /.card-header -->
-              <div class="card-body p-0">
-                <div class="px-2">
-                  100jt
+            <div class="card border-0 shadow-sm" style="border-left: 5px solid #28a745;">
+              <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                  <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                    <i class="bi bi-graph-up-arrow fs-2"></i>
+                  </div>
+                </div>
+                <div>
+                  <h6 class="card-title text-secondary mb-1">Total Pemasukan</h6>
+                  <div class="align-items-baseline">
+                    <h3 class="fw-bold text-success mb-0" style="line-height: 1;"> Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></h3>
+                  </div>
+                  <small class="text-muted">Sampai saat ini</small>
                 </div>
               </div>
             </div>
-
-            <!-- /.card -->
-
           </div>
-          <!-- /.col -->
 
+          <!-- CARD PENGELUARAN -->
           <div class="col-md-6">
-            <!-- PRODUCT LIST -->
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Total Pengeluaran</h3>
-              </div>
-              <!-- /.card-header -->
-              <div class="card-body p-0">
-                <div class="px-2">
-                  100jt
+            <div class="card border-0 shadow-sm" style="border-left: 5px solid #dc3545;">
+              <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                  <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                    <i class="bi bi-cash-stack fs-2"></i>
+                  </div>
+                </div>
+                <div>
+                  <h6 class="card-title text-secondary mb-1">Total Pengeluaran</h6>
+                  <div class="align-items-baseline">
+                    <h3 class="fw-bold text-danger mb-0" style="line-height: 1;">Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></h3>
+                  </div>
+                  <small class="text-muted">Sampai saat ini</small>
                 </div>
               </div>
             </div>
-
-            <!-- /.card -->
-
           </div>
-
-          <!-- /.col -->
         </div>
-        <!--end::Row-->
+
       </div>
       <!--end::Container-->
     </div>

@@ -38,7 +38,7 @@ if (isset($_GET['id'])) {
         name="keywords"
         content="Admin Panitia Bona Taon PTS" />
 
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
     <!--begin::Fonts-->
     <link
         rel="stylesheet"

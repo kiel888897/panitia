@@ -1,75 +1,108 @@
 <?php
 session_start();
 require_once 'db.php';
+function slugify($text)
+{
+    // Ganti karakter non huruf/angka dengan strip
+    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+    // Transliterate ke ASCII
+    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    // Hapus karakter yang tidak diinginkan
+    $text = preg_replace('~[^-\w]+~', '', $text);
+    // Trim strip
+    $text = trim($text, '-');
+    // Hapus duplikat strip
+    $text = preg_replace('~-+~', '-', $text);
+    // Lowercase
+    $text = strtolower($text);
 
+    return $text ?: 'n-a';
+}
 // Cek apakah admin sudah login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
-
-$error = '';
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
-    $restaurant_stmt  = $pdo->prepare("SELECT * FROM restaurants WHERE id = ?");
-    $restaurant_stmt->execute([$id]);
-    $restaurant = $restaurant_stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("SELECT * FROM sumbangan WHERE id = ?");
+    $stmt->execute([$id]);
+    $sumbangan = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$sumbangan) {
+        header('Location: sumbangan.php');
+        exit;
+    }
+} else {
+    header('Location: sumbangan.php');
+    exit;
 }
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Ambil dan trim semua input
-    $restaurant_id  = trim($_POST['restaurant_id'] ?? '');
-    $name           = trim($_POST['name'] ?? '');
-    $description    = trim($_POST['description'] ?? '');
-    $price          = trim($_POST['price'] ?? '');
-    $status         = 'active'; // Default status
-    if (!empty($_FILES['photo']['name'][0])) { // Cek jika ada file yang diunggah
-        $photos = $_FILES['photo'];
-        $photo_filenames = []; // Array untuk menyimpan nama file yang diupload
+    $nama           = trim($_POST['nama'] ?? '');
+    $jenis       = trim($_POST['jenis'] ?? '');
+    $jumlah       = trim($_POST['jumlah'] ?? '');
+    $keterangan   = trim($_POST['description'] ?? '');
+    $tanggal      = trim($_POST['tanggal'] ?? '');
+    $bukti_lama     = $_POST['bukti_lama'] ?? ($sumbangan['photo'] ?? '');
+    $bukti          = $bukti_lama;
+    // jika ada upload bukti baru
+    if (!empty($_FILES['bukti']['name'])) {
+        $targetDir = "uploads/";
+        if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
 
-        // Loop melalui setiap file yang diunggah
-        foreach ($photos['name'] as $index => $namep) {
-            $photo_filename = time() . '_' . basename($namep);
-            $target_directory = 'uploads/menus/';
+        // ambil ekstensi dan slug nama anggota
+        $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+        $slugNama = slugify($nama);
+        $tanggalFile = date('Ymd', strtotime($tanggal));
+        $filename = "sumbangan-{$slugNama}-{$tanggalFile}." . $ext;
+        $targetFile = $targetDir . $filename;
 
-            if (!is_dir($target_directory)) {
-                mkdir($target_directory, 0755, true);
-            }
+        // jika file dengan nama sama sudah ada, tambahkan suffix unik
+        $counter = 1;
+        $base = pathinfo($filename, PATHINFO_FILENAME);
+        while (file_exists($targetFile)) {
+            $filename = "{$base}-{$counter}." . $ext;
+            $targetFile = $targetDir . $filename;
+            $counter++;
+        }
 
-            $target_path = $target_directory . $photo_filename;
+        // hapus file lama jika ada dan bukan kosong
+        if (!empty($bukti_lama) && file_exists($targetDir . $bukti_lama)) {
+            @unlink($targetDir . $bukti_lama);
+        }
 
-            if (move_uploaded_file($photos['tmp_name'][$index], $target_path)) {
-                $photo_filenames[] = $photo_filename; // Simpan nama file yang berhasil diupload
-            } else {
-                $error = 'Failed to upload one or more photos.';
-            }
+        if (move_uploaded_file($_FILES["bukti"]["tmp_name"], $targetFile)) {
+            $bukti = $filename;
+        } else {
+            $error = "Gagal mengunggah bukti pembayaran.";
         }
     }
-
-    $photo_filenames_json = json_encode($photo_filenames);
     // Validasi input minimal yang diperlukan
-    if ($restaurant_id && $name) {
+    if ($nama && $jenis && $tanggal) {
         try {
-            $stmt = $pdo->prepare("
-                INSERT INTO menus 
-                (restaurant_id, name, description, price, photo, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ");
+
+
+            $stmt = $pdo->prepare("UPDATE sumbangan SET nama = ?, photo = ?, jenis = ?, jumlah = ?, keterangan = ?, tanggal = ? WHERE id = ?");
             $stmt->execute([
-                $restaurant_id,
-                $name,
-                $description,
-                $price,
-                $photo_filenames_json,
-                $status
+                $nama,
+                $bukti,
+                $jenis,
+                $jumlah,
+                $keterangan,
+                $tanggal,
+                $id
             ]);
-            header("Location: menu_restaurant.php?id={$id}");
+
+            header('Location: sumbangan.php');
             exit;
         } catch (PDOException $e) {
             $error = 'Database error: ' . $e->getMessage();
         }
     } else {
-        $error = 'Please fill in all required fields (name).';
+        $error = 'Please fill in all required fields (Nama, Jenis, Jumlah, Keterangan, and Tanggal).';
     }
 }
 ?>
@@ -125,8 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         crossorigin="anonymous" />
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.12.1/css/dataTables.bootstrap5.min.css" />
-    <!-- font  -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Roboto&family=Lato&family=Montserrat&family=Poppins&display=swap" rel="stylesheet">
     <!-- Summernote CSS -->
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
 
@@ -152,14 +183,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Menu <?= htmlspecialchars(ucwords($restaurant['name'])) ?></h3>
+                            <h3 class="mb-0">Edit Sumbangan</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="restaurants.php">Restaurants</a></li>
-                                <li class="breadcrumb-item"><a href="menu_restaurant.php?id=<?= htmlspecialchars($restaurant['id']) ?>">Menu Restaurants</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Menu</li>
+                                <li class="breadcrumb-item"><a href="sumbangan.php">Sumbangan</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Edit Sumbangan</li>
                             </ol>
                         </div>
                     </div>
@@ -179,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Menu Information</div>
+                                    <div class="card-title">Sumbangan Information</div>
                                 </div>
                                 <!--end::Header-->
 
@@ -188,38 +218,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php endif; ?>
                                 <!--begin::Form-->
                                 <form method="POST" enctype="multipart/form-data">
-                                    <input type="hidden" class="form-control" name="restaurant_id" id="restaurant_id" aria-describedby="restaurant_id" value="<?= htmlspecialchars($restaurant['id']) ?>" />
-
                                     <!--begin::Body-->
                                     <div class="card-body">
                                         <div class="mb-3">
-                                            <label for="name" class="form-label">Name</label>
-                                            <input type="text" class="form-control" name="name" id="name" aria-describedby="name" required />
+                                            <label for="tanggal" class="form-label">Tanggal</label>
+                                            <input
+                                                type="date" class="form-control" name="tanggal" id="tanggal" aria-describedby="tanggal" value="<?= htmlspecialchars($sumbangan['tanggal']) ?>" required />
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nama" class="form-label">Nama</label>
+                                            <input
+                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" value="<?= htmlspecialchars($sumbangan['nama']) ?>" required />
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="jenis" class="form-label">Jenis</label>
+                                            <select class="form-select" name="jenis" id="jenis" required>
+                                                <option selected disabled value="">Choose ...</option>
+                                                <option value="dana" <?= ($sumbangan['jenis'] === 'dana') ? 'selected' : '' ?>>Dana</option>
+                                                <option value="produk" <?= ($sumbangan['jenis'] === 'produk') ? 'selected' : '' ?>>Produk</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a valid jenis Type.</div>
+                                        </div>
+
+                                        <div class="mb-3" id="jumlahContainer" style="display: none;">
+                                            <label for="jumlah" class="form-label">Jumlah</label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                name="jumlah"
+                                                id="jumlah"
+                                                aria-describedby="jumlah"
+                                                placeholder="Masukkan jumlah (Rp)" value="<?= htmlspecialchars($sumbangan['jumlah']) ?>" />
+                                        </div>
+
+
+
+                                        <div class="mb-3">
+                                            <label for="description" class="form-label">Keterangan</label>
+                                            <textarea class="form-control" name="description" id="description" aria-label="description"><?= htmlspecialchars($sumbangan['keterangan']) ?></textarea>
                                         </div>
 
                                         <div class="mb-3">
-                                            <label for="description" class="form-label">Description</label>
-
-                                            <textarea class="form-control" name="description" id="description" aria-label="description"></textarea>
+                                            <label class="form-label">Upload (opsional)</label>
+                                            <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                                            <?php if (!empty($sumbangan['photo'])): ?>
+                                                <p class="mt-2">File saat ini:
+                                                    <a href="uploads/<?= htmlspecialchars($sumbangan['photo']) ?>" target="_blank"><?= htmlspecialchars($sumbangan['photo']) ?></a>
+                                                </p>
+                                            <?php endif; ?>
                                         </div>
-                                        <div class="mb-3">
-                                            <label for="price" class="form-label">Price</label>
-                                            <input type="number" name="price" id="price" class="form-control" aria-describedby="price">
-                                        </div>
-
-
-                                        <div class="input-group mb-3">
-                                            <input type="file" class="form-control" name="photo[]" id="photo" accept="image/*" multiple />
-                                            <label class="input-group-text" for="photo">Photos</label>
-                                        </div>
-
-
                                     </div>
                                     <!--end::Body-->
                                     <!--begin::Footer-->
                                     <div class="card-footer">
                                         <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="menu_restaurant.php?id=<?= htmlspecialchars($restaurant['id']) ?>" class="float-end btn btn-secondary">Back</a>
+                                        <a href="sumbangan.php" class="float-end btn btn-secondary">Back</a>
                                     </div>
                                     <!--end::Footer-->
                                 </form>
@@ -251,11 +304,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
         crossorigin="anonymous"></script>
     <script src="assets/js/adminlte.js"></script>
+
     <!-- JS Summernote -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
-
     <script>
         const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
         const Default = {
@@ -303,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             },
             tabsize: 2,
-            height: 300,
+            height: 200,
             toolbar: [
                 ['style', ['style']],
                 ['font', ['bold', 'italic', 'underline', 'clear']],
@@ -357,6 +410,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             alert("Konten berhasil ditangkap. Lihat console.");
             return false;
         }
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const jenisSelect = document.getElementById("jenis");
+            const jumlahContainer = document.getElementById("jumlahContainer");
+
+            jenisSelect.addEventListener("change", function() {
+                if (this.value === "dana") {
+                    jumlahContainer.style.display = "block";
+                } else {
+                    jumlahContainer.style.display = "none";
+                    document.getElementById("jumlah").value = ""; // kosongkan jika bukan dana
+                }
+            });
+        });
     </script>
 </body>
 

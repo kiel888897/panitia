@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         name="keywords"
         content="Admin Panitia Bona Taon PTS" />
 
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
     <!--begin::Fonts-->
     <link
         rel="stylesheet"

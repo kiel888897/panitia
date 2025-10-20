@@ -6,7 +6,7 @@
         <a href="../" class="brand-link">
             <!--begin::Brand Image-->
             <img
-                src="assets/img/logos.png"
+                src="assets/img/logop.png"
                 alt="Panitia Bona Taon PTS"
                 class="brand-image opacity-75 shadow" />
             <!--end::Brand Image-->
@@ -55,75 +55,133 @@
                         </li>
                     </ul> -->
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon bi bi-cash-coin"></i>
-                        <p>
-                            Tok-tok Ripe
-                            <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="toktok.php" class="nav-link">
-                                <i class="bi bi-circle"></i>
-                                <p>Data Tok-tok Ripe</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="toktok-proses.php" class="nav-link">
-                                <i class="bi bi-circle"></i>
-                                <p>Proses Pembayaran</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item has-treeview  <?php if ($menu === 'toktok' || $menu === 'toktok-proses') echo 'menu-open'; ?>">
+                        <a href="#" class="nav-link <?php if ($menu === 'toktok' || $menu === 'toktok-proses') echo 'active'; ?>">
+                            <i class="nav-icon bi bi-cash-coin"></i>
+                            <p>
+                                Tok-tok Ripe
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="toktok.php" class="nav-link <?php if ($menu === 'toktok') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Data Tok-tok Ripe</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="toktok-proses.php" class="nav-link <?php if ($menu === 'toktok-proses') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Proses Pembayaran</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                <?php } ?>
 
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item">
+                        <a href="sumbangan.php" class="nav-link">
+                            <i class="nav-icon bi bi-gift-fill"></i>
+                            <p>Sumbangan</p>
+                        </a>
+                    </li>
 
-                <!-- <li class="nav-item">
-                    <a href="restaurants.php" class="nav-link">
-                        <i class="nav-icon bi bi-box-seam-fill"></i>
-                        <p>Restaurants</p>
-                    </a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a href="menu.php" class="nav-link">
-                        <i class="nav-icon bi bi-box-seam-fill"></i>
-                        <p>Menu Restaurants</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon bi bi-box-seam-fill"></i>
-                        <p>Order</p>
-                    </a>
-                </li> -->
+                <?php } ?>
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
+                        <a href="#" class="nav-link <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'active'; ?>">
+                            <i class="nav-icon bi bi-cash-coin"></i>
+                            <p>
+                                Silua
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" class="nav-link <?php if ($menu === 'keluar') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Data Silua</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link <?php if ($menu === 'keluar-proses') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Proses Silua</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                <?php } ?>
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
+                        <a href="#" class="nav-link <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'active'; ?>">
+                            <i class="nav-icon bi bi-cash-coin"></i>
+                            <p>
+                                Pengeluaran
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#.php" class="nav-link <?php if ($menu === 'keluar') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Data Pengeluaran</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#.php" class="nav-link <?php if ($menu === 'keluar-proses') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Proses Pengeluaran</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                <?php } ?>
 
-                <!-- <li class="nav-item">
-                    <a href="category_menu.php" class="nav-link">
-                        <i class="nav-icon bi bi-box-seam-fill"></i>
-                        <p>Category Menu</p>
-                    </a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a href="reservations.php" class="nav-link">
-                        <i class="nav-icon bi bi-box-seam-fill"></i>
-                        <p>Reservations</p>
-                    </a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a href="review.php" class="nav-link">
-                        <i class="nav-icon bi bi-box-seam-fill"></i>
-                        <p>Review</p>
-                    </a>
-                </li> -->
-                <li class="nav-item">
-                    <a href="anggota.php" class="nav-link">
-                        <i class="nav-icon bi bi-person-fill"></i>
-                        <p>Anggota</p>
-                    </a>
-                </li>
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
+                        <a href="#" class="nav-link <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'active'; ?>">
+                            <i class="nav-icon bi bi-file-earmark-text"></i>
+                            <p>
+                                Laporan
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#.php" class="nav-link <?php if ($menu === 'keluar') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Laporan Pemasukan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#.php" class="nav-link <?php if ($menu === 'keluar-proses') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Laporan Pengeluaran</p>
+                                </a>
+                            </li>
 
+                            <li class="nav-item">
+                                <a href="#.php" class="nav-link <?php if ($menu === 'keluar-proses') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Laporan Sumbangan</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                <?php } ?>
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item">
+                        <a href="anggota.php" class="nav-link">
+                            <i class="nav-icon bi bi-person-fill"></i>
+                            <p>Anggota</p>
+                        </a>
+                    </li>
+
+                <?php } ?>
 
             </ul>
             <!--end::Sidebar Menu-->
