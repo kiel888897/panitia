@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$dbname = 'danapts';
+$dbname = 'danapts-35303936a57b';
 $user = 'root';
 $pass = ''; // sesuaikan dengan password MySQL-mu
 

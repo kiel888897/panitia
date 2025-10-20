@@ -10,12 +10,12 @@ if (!isset($_SESSION['admin_id'])) {
 if (isset($_GET['id'])) {
     $id = (int) $_GET['id'];
 
-    $stmt = $pdo->prepare("DELETE FROM anggotas WHERE id = :id");
+    $stmt = $pdo->prepare("DELETE FROM bayar_baju WHERE id = :id");
     $stmt->execute([':id' => $id]);
 
-    header('Location: anggota.php?deleted=1');
+    header('Location: baju-proses.php?deleted=1');
     exit;
 } else {
-    header('Location: anggota.php?error=1');
+    header('Location: baju-proses.php?error=1');
     exit;
 }

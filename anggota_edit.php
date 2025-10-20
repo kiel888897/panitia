@@ -26,7 +26,7 @@ if (!isset($_SESSION['admin_id'])) {
 
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
-    $stmt = $pdo->prepare("SELECT * FROM anggota WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT * FROM anggotas WHERE id = ?");
     $stmt->execute([$id]);
     $anggota = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $posisi       = trim($_POST['posisi'] ?? '');
 
     if ($nama && $posisi) {
-        $stmt = $pdo->prepare("UPDATE anggota SET nama = ?, jabatan = ? WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE anggotas SET nama = ?, jabatan = ? WHERE id = ?");
         $stmt->execute([$nama, $posisi, $id]);
         header('Location: anggota.php');
         exit;

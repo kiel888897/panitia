@@ -18,10 +18,10 @@ $stmt = $pdo->query("
         iuran.sukarela,
         iuran.keterangan,
         iuran.bukti,
-        anggota.nama AS nama_anggota,
-        anggota.jabatan
+        anggotas.nama AS nama_anggota,
+        anggotas.jabatan
     FROM iuran
-    INNER JOIN anggota ON iuran.anggota_id = anggota.id
+    INNER JOIN anggotas ON iuran.anggota_id = anggotas.id
     ORDER BY iuran.tanggal_bayar DESC
 ");
 $iurans = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -125,7 +125,7 @@ $iurans = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="card">
 
                                 <div class="card-body">
-                                    <a href="toktok_add.php" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Tambah Iuran</a>
+                                    <a href="toktok_add.php" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Tambah Tok-Tok Ripe</a>
                                     <table class="table table-bordered" id="toktokTable">
                                         <thead class="table-light">
                                             <tr>
@@ -186,8 +186,8 @@ $iurans = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Approved!',
-                text: 'The Anggota has been successfully approved and is now visible to the public.',
+                title: 'Data Approved!',
+                text: 'The Data has been successfully approved and is now visible to the public.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });
@@ -196,8 +196,8 @@ $iurans = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Deleted!',
-                text: 'The Anggota has been successfully removed from the system.',
+                title: 'Data Deleted!',
+                text: 'The Data has been successfully removed from the system.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });

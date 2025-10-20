@@ -12,7 +12,7 @@ $error = '';
 $success = '';
 
 // Ambil data anggota untuk dropdown
-$anggotaStmt = $pdo->query("SELECT id, nama FROM anggota ORDER BY nama ASC");
+$anggotaStmt = $pdo->query("SELECT id, nama FROM anggotas ORDER BY nama ASC");
 $anggotas = $anggotaStmt->fetchAll(PDO::FETCH_ASSOC);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
 
         // Ambil nama anggota untuk dijadikan bagian nama file
-        $stmtNama = $pdo->prepare("SELECT nama FROM anggota WHERE id = ?");
+        $stmtNama = $pdo->prepare("SELECT nama FROM anggotas WHERE id = ?");
         $stmtNama->execute([$anggota_id]);
         $namaAnggota = $stmtNama->fetchColumn();
         $namaAnggotaSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($namaAnggota)); // buat aman untuk nama file

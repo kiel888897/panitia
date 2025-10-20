@@ -172,8 +172,8 @@ $sumbangans = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Approved!',
-                text: 'The Anggota has been successfully approved and is now visible to the public.',
+                title: 'Sumbangan Approved!',
+                text: 'The Sumbangan has been successfully approved and is now visible to the public.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });
@@ -182,8 +182,8 @@ $sumbangans = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Deleted!',
-                text: 'The Anggota has been successfully removed from the system.',
+                title: 'Sumbangan Deleted!',
+                text: 'The Sumbangan has been successfully removed from the system.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });

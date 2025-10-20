@@ -8,7 +8,7 @@ $stmt = $pdo->query("
         a.nama,
         COALESCE(SUM(i.toktok), 0) AS total_toktok,
         COALESCE(SUM(i.sukarela), 0) AS total_sukarela
-    FROM anggota a
+    FROM anggotas a
     LEFT JOIN iuran i ON a.id = i.anggota_id
     GROUP BY a.id, a.nama
     ORDER BY a.nama ASC

@@ -80,7 +80,31 @@
                         </ul>
                     </li>
                 <?php } ?>
-
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item has-treeview  <?php if ($menu === 'baju' || $menu === 'baju-proses') echo 'menu-open'; ?>">
+                        <a href="#" class="nav-link <?php if ($menu === 'baju' || $menu === 'baju-proses') echo 'active'; ?>">
+                            <i class="nav-icon bi bi-person-badge"></i>
+                            <p>
+                                Baju PTS
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="baju.php" class="nav-link <?php if ($menu === 'baju') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Pesanan Baju PTS</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="baju-proses.php" class="nav-link <?php if ($menu === 'baju-proses') echo 'active'; ?>">
+                                    <i class="bi bi-circle"></i>
+                                    <p>Proses Pembayaran</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                <?php } ?>
                 <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
                     <li class="nav-item">
                         <a href="sumbangan.php" class="nav-link">

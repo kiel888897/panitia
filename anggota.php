@@ -8,7 +8,7 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
-$stmt = $pdo->query("SELECT * FROM anggota  ORDER BY id DESC");
+$stmt = $pdo->query("SELECT * FROM anggotas  ORDER BY id DESC");
 $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>

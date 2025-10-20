@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_id'])) {
 if (isset($_GET['id'])) {
     $id = (int) $_GET['id'];
 
-    $stmt = $pdo->prepare("DELETE FROM anggota WHERE id = :id");
+    $stmt = $pdo->prepare("DELETE FROM anggotas WHERE id = :id");
     $stmt->execute([':id' => $id]);
 
     header('Location: anggota.php?deleted=1');

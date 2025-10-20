@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($nama && $posisi) {
         try {
             $stmt = $pdo->prepare("
-                INSERT INTO anggota 
+                INSERT INTO anggotas 
                 (nama, jabatan)
                 VALUES (?, ?)
             ");

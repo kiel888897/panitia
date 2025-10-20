@@ -1,56 +1,71 @@
 <?php
 session_start();
 require_once 'db.php';
-function slugify($text)
-{
-    // Ganti karakter non huruf/angka dengan strip
-    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
-    $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
-    $text = trim($text, '-');
-    // Hapus duplikat strip
-    $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
 
-    return $text ?: 'n-a';
-}
-// Cek apakah admin sudah login
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $error = '';
+$success = '';
+
+// Ambil hanya anggota yang punya order_items
+$anggotaStmt = $pdo->query("
+    SELECT DISTINCT a.id, a.nama
+    FROM anggota a
+    JOIN order_items oi ON oi.order_id = a.id
+    ORDER BY a.nama ASC
+");
+$anggotas = $anggotaStmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Ambil dan trim semua input
-    $nama           = trim($_POST['nama'] ?? '');
-    $posisi       = trim($_POST['posisi'] ?? '');
+    $anggota_id = $_POST['anggota_id'] ?? '';
+    $jumlah = $_POST['jumlah'] ?? 0;
+    $tanggal = $_POST['tanggal'] ?? date('Y-m-d');
+    $bukti = '';
 
-    // Validasi input minimal yang diperlukan
-    if ($nama && $posisi) {
+    // Upload bukti jika ada
+    if (!empty($_FILES['bukti']['name'])) {
+        $targetDir = "uploads/";
+        if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+
+        $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+
+        // Ambil nama anggota untuk nama file
+        $stmtNama = $pdo->prepare("SELECT nama FROM anggota WHERE id = ?");
+        $stmtNama->execute([$anggota_id]);
+        $namaAnggota = $stmtNama->fetchColumn();
+        $namaAnggotaSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($namaAnggota));
+
+        $tanggalFile = date('Ymd', strtotime($tanggal));
+        $filename = "bayar-baju-" . $namaAnggotaSlug . "-" . $tanggalFile . "." . $ext;
+        $targetFile = $targetDir . $filename;
+
+        if (move_uploaded_file($_FILES["bukti"]["tmp_name"], $targetFile)) {
+            $bukti = $filename;
+        } else {
+            $error = "Gagal upload bukti pembayaran.";
+        }
+    }
+
+    // Insert ke database
+    if (!$error && $anggota_id && $jumlah > 0) {
         try {
             $stmt = $pdo->prepare("
-                INSERT INTO anggotas 
-                (nama, jabatan)
-                VALUES (?, ?)
+                INSERT INTO bayar_baju (anggota_id, jumlah, tanggal, bukti)
+                VALUES (?, ?, ?, ?)
             ");
-            $stmt->execute([
-                $nama,
-                $posisi
-            ]);
-
-            header('Location: anggota.php');
+            $stmt->execute([$anggota_id, $jumlah, $tanggal, $bukti]);
+            header('Location: baju-proses.php');
             exit;
         } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
+            $error = "Database error: " . $e->getMessage();
         }
     } else {
-        $error = 'Please fill in all required fields (Nama and Posisi).';
+        if (!$anggota_id || $jumlah <= 0) $error = "Harap isi semua field wajib.";
     }
 }
 ?>
@@ -129,13 +144,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Anggota</h3>
+                            <h3 class="mb-0">Add New Pembayaran Baju</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Anggota</li>
+                                <li class="breadcrumb-item"><a href="baju-proses.php">Pembayaran Baju</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Add Pembayaran Baju</li>
                             </ol>
                         </div>
                     </div>
@@ -155,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Anggota Information</div>
+                                    <div class="card-title">Pembayaran Baju Information</div>
                                 </div>
                                 <!--end::Header-->
 
@@ -163,34 +178,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                                 <?php endif; ?>
                                 <!--begin::Form-->
+
                                 <form method="POST" enctype="multipart/form-data">
-                                    <!--begin::Body-->
                                     <div class="card-body">
                                         <div class="mb-3">
-                                            <label for="nama" class="form-label">Nama</label>
-                                            <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="day" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi" required>
-                                                <option selected disabled value="">Choose ...</option>
-                                                <option value="hula">Hula hula</option>
-                                                <option value="boru">Boru</option>
-                                                <option value="bere">Bere & Ibebere</option>
+                                            <label class="form-label">Nama Anggota</label>
+                                            <select name="anggota_id" class="form-select" required>
+                                                <option value="">-- Pilih Anggota --</option>
+                                                <?php foreach ($anggotas as $a): ?>
+                                                    <option value="<?= $a['id'] ?>"><?= htmlspecialchars($a['nama']) ?></option>
+                                                <?php endforeach; ?>
                                             </select>
-                                            <div class="invalid-feedback">Please select a valid posisi Type.</div>
                                         </div>
 
+                                        <div class="mb-3">
+                                            <label class="form-label">Tanggal Bayar</label>
+                                            <input type="date" name="tanggal" class="form-control" required>
+                                        </div>
 
+                                        <div class="mb-3">
+                                            <label class="form-label">Jumlah Pembayaran (Rp)</label>
+                                            <input type="number" name="jumlah" class="form-control" min="0" placeholder="Contoh: 100000" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Upload Bukti (opsional)</label>
+                                            <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                                        </div>
                                     </div>
-                                    <!--end::Body-->
-                                    <!--begin::Footer-->
+
                                     <div class="card-footer">
-                                        <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="anggota.php" class="float-end btn btn-secondary">Back</a>
+                                        <button type="submit" class="btn btn-primary">Simpan</button>
+                                        <a href="baju-proses.php" class="btn btn-secondary float-end">Kembali</a>
                                     </div>
-                                    <!--end::Footer-->
                                 </form>
                                 <!--end::Form-->
                             </div>

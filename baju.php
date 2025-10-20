@@ -1,58 +1,36 @@
 <?php
+$menu = 'baju';
 session_start();
 require_once 'db.php';
-function slugify($text)
-{
-    // Ganti karakter non huruf/angka dengan strip
-    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
-    $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
-    $text = trim($text, '-');
-    // Hapus duplikat strip
-    $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
 
-    return $text ?: 'n-a';
-}
-// Cek apakah admin sudah login
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Ambil dan trim semua input
-    $nama           = trim($_POST['nama'] ?? '');
-    $posisi       = trim($_POST['posisi'] ?? '');
-
-    // Validasi input minimal yang diperlukan
-    if ($nama && $posisi) {
-        try {
-            $stmt = $pdo->prepare("
-                INSERT INTO anggotas 
-                (nama, jabatan)
-                VALUES (?, ?)
-            ");
-            $stmt->execute([
-                $nama,
-                $posisi
-            ]);
-
-            header('Location: anggota.php');
-            exit;
-        } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
-        }
-    } else {
-        $error = 'Please fill in all required fields (Nama and Posisi).';
-    }
-}
+/*
+ Query:
+ - anggota.id = order_items.order_id (sesuai penjelasan kamu)
+ - GROUP BY anggota untuk ringkasan
+ - GROUP_CONCAT untuk menampilkan ukuran dan qty seperti "L x2, XL x1"
+*/
+$stmt = $pdo->query("
+    SELECT 
+        a.id, 
+        a.nama, 
+        a.hp, 
+        a.alamat,
+        COUNT(*) AS total_items_rows,            -- baris item (bisa beberapa baris untuk 1 anggota)
+        SUM(oi.qty) AS total_qty,               -- total qty semua ukuran
+        (SUM(oi.qty) * 100000) AS total_pesanan,
+        GROUP_CONCAT(CONCAT(oi.qty, oi.size) SEPARATOR ', ') AS pesanan
+    FROM anggota a
+    JOIN order_items oi ON oi.order_id = a.id
+    GROUP BY a.id
+    ORDER BY a.nama ASC
+");
+$bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!doctype html>
@@ -110,6 +88,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <!--end::Head-->
 <!--begin::Body-->
+<!-- Modal Export -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="exportModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Export Data Baju PTS
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 30vh;">
+                <iframe src="export_baju.php" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <!--begin::App Wrapper-->
@@ -129,13 +128,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Anggota</h3>
+                            <h3 class="mb-0">Baju PTS</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Anggota</li>
+                                <li class="breadcrumb-item active" aria-current="page">Baju PTS</li>
                             </ol>
                         </div>
                     </div>
@@ -150,59 +148,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="container-fluid">
                     <!--begin::Row-->
                     <div class="row">
-                        <div class="col-md-12">
-                            <!--begin::Quick Example-->
-                            <div class="card card-primary card-outline mb-4">
-                                <!--begin::Header-->
-                                <div class="card-header">
-                                    <div class="card-title">Anggota Information</div>
+                        <div class="col-12">
+                            <!-- Default box -->
+                            <div class="card">
+
+                                <div class="card-body">
+                                    <!-- <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#exportModal">
+                                        <i class="bi bi-download"></i> Export Data
+                                    </button> -->
+
+                                    <!-- <a href="toktok_add.php" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Tambah Pembayaran</a> -->
+                                    <table class="table table-bordered" id="toktokTable">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Nama</th>
+
+                                                <th>Pesanan</th>
+                                                <th>Total Pesanan (Rp)</th>
+                                                <th>Total Pembayaran (Rp)</th>
+                                                <th>Keterangan</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php
+                                            $i = 1;
+                                            $rowClass = ''; // definisikan supaya tidak undefined
+                                            foreach ($bajus as $row):
+                                            ?>
+                                                <tr>
+                                                    <td><?= $i++ ?></td>
+                                                    <td>
+                                                        <?= htmlspecialchars($row['nama']) ?>
+                                                    </td>
+
+                                                    <td>
+                                                        <?= htmlspecialchars($row['pesanan']) ?: '-' ?>
+                                                        <div><small>• Total qty: <?= (int)$row['total_qty'] ?></small></div>
+                                                    </td>
+                                                    <td>Rp <?= number_format($row['total_pesanan'], 0, ',', '.') ?></td>
+                                                    <!-- Tidak ada kolom harga di order_items; tampilkan '-' atau ubah bila sudah ada harga -->
+
+                                                    <td>-</td>
+
+                                                    <td>-</td>
+                                                    <td>-</td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <!--end::Header-->
-
-                                <?php if ($error): ?>
-                                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-                                <?php endif; ?>
-                                <!--begin::Form-->
-                                <form method="POST" enctype="multipart/form-data">
-                                    <!--begin::Body-->
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="nama" class="form-label">Nama</label>
-                                            <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="day" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi" required>
-                                                <option selected disabled value="">Choose ...</option>
-                                                <option value="hula">Hula hula</option>
-                                                <option value="boru">Boru</option>
-                                                <option value="bere">Bere & Ibebere</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a valid posisi Type.</div>
-                                        </div>
-
-
-                                    </div>
-                                    <!--end::Body-->
-                                    <!--begin::Footer-->
-                                    <div class="card-footer">
-                                        <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="anggota.php" class="float-end btn btn-secondary">Back</a>
-                                    </div>
-                                    <!--end::Footer-->
-                                </form>
-                                <!--end::Form-->
                             </div>
-
                         </div>
                     </div>
                 </div>
+            </div>
         </main>
         <?php include 'footer.php' ?>
     </div>
 
-
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <?php if (isset($_GET['approved'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Approved!',
+                text: 'The Data has been successfully approved and is now visible to the public.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    <?php elseif (isset($_GET['deleted'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Deleted!',
+                text: 'The Data has been successfully removed from the system.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    <?php elseif (isset($_GET['error'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Action Failed',
+                text: 'There was a problem processing your request. Please try again.',
+                confirmButtonText: 'OKAY',
+                confirmButtonColor: '#dc3545'
+            });
+        </script>
+    <?php endif; ?>
     <!-- DataTables JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
@@ -247,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 paging: true, // Aktifkan pagination
                 searching: true, // Aktifkan fitur pencarian
                 lengthChange: false, // Menonaktifkan pilihan jumlah item per halaman
-                pageLength: 5, // Menentukan jumlah baris per halaman
+                pageLength: 10, // Menentukan jumlah baris per halaman
                 language: {
                     search: "Cari:",
                     paginate: {
@@ -258,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         });
     </script>
+
 </body>
 
 </html>

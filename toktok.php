@@ -17,7 +17,7 @@ $stmt = $pdo->query("
         a.jabatan,
         COALESCE(SUM(i.toktok), 0) AS total_toktok,
         COALESCE(SUM(i.sukarela), 0) AS total_sukarela
-    FROM anggota a
+    FROM anggotas a
     LEFT JOIN iuran i ON a.id = i.anggota_id
     GROUP BY a.id, a.nama, a.jabatan
     ORDER BY a.nama ASC
@@ -222,8 +222,8 @@ $anggotaList = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Approved!',
-                text: 'The Anggota has been successfully approved and is now visible to the public.',
+                title: 'Data Approved!',
+                text: 'The Data has been successfully approved and is now visible to the public.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });
@@ -232,8 +232,8 @@ $anggotaList = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Deleted!',
-                text: 'The Anggota has been successfully removed from the system.',
+                title: 'Data Deleted!',
+                text: 'The Data has been successfully removed from the system.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });

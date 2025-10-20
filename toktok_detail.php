@@ -9,7 +9,7 @@ if (!isset($_GET['id'])) {
 $anggota_id = (int) $_GET['id'];
 
 // Ambil data anggota
-$stmt = $pdo->prepare("SELECT * FROM anggota WHERE id = ?");
+$stmt = $pdo->prepare("SELECT * FROM anggotas WHERE id = ?");
 $stmt->execute([$anggota_id]);
 $anggota = $stmt->fetch(PDO::FETCH_ASSOC);
 

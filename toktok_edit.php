@@ -29,9 +29,9 @@ $id = (int) $_GET['id'];
 
 // Ambil data iuran beserta nama anggota
 $stmt = $pdo->prepare("
-    SELECT iuran.*, anggota.nama AS nama_anggota, anggota.jabatan
+    SELECT iuran.*, anggotas.nama AS nama_anggota, anggotas.jabatan
     FROM iuran
-    INNER JOIN anggota ON iuran.anggota_id = anggota.id
+    INNER JOIN anggotas ON iuran.anggota_id = anggotas.id
     WHERE iuran.id = ?
     LIMIT 1
 ");
@@ -200,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Edit toktok-proses</h3>
+                            <h3 class="mb-0">Edit-proses</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
@@ -226,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">toktok-proses Information</div>
+                                    <div class="card-title">Tok-tok ripe Information</div>
                                 </div>
                                 <!--end::Header-->
                                 <?php if ($error): ?>

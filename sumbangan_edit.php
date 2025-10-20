@@ -240,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <div class="invalid-feedback">Please select a valid jenis Type.</div>
                                         </div>
 
-                                        <div class="mb-3" id="jumlahContainer" style="display: none;">
+                                        <div class="mb-3" id="jumlahContainer">
                                             <label for="jumlah" class="form-label">Jumlah</label>
                                             <input
                                                 type="text"

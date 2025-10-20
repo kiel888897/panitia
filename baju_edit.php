@@ -1,56 +1,110 @@
 <?php
 session_start();
 require_once 'db.php';
+
+// Fungsi ubah teks ke slug (untuk nama file)
 function slugify($text)
 {
-    // Ganti karakter non huruf/angka dengan strip
     $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
     $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
     $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
     $text = trim($text, '-');
-    // Hapus duplikat strip
     $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
-
-    return $text ?: 'n-a';
+    return strtolower($text ?: 'n-a');
 }
-// Cek apakah admin sudah login
+
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
+// Pastikan ada ID pembayaran
+if (!isset($_GET['id'])) {
+    header('Location: baju-proses.php');
+    exit;
+}
+
+$id = (int) $_GET['id'];
+
+// Ambil data bayar_baju beserta nama anggota (PERBAIKAN: langsung JOIN anggota)
+$stmt = $pdo->prepare("
+    SELECT bb.*, a.nama AS nama_anggota
+    FROM bayar_baju bb
+    JOIN anggota a ON bb.anggota_id = a.id
+    WHERE bb.id = ?
+    LIMIT 1
+");
+$stmt->execute([$id]);
+$bayar = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$bayar) {
+    header('Location: baju-proses.php');
+    exit;
+}
+
 $error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Ambil dan trim semua input
-    $nama           = trim($_POST['nama'] ?? '');
-    $posisi       = trim($_POST['posisi'] ?? '');
+    $jumlah = $_POST['jumlah'] ?? 0;
+    $tanggal = $_POST['tanggal'] ?? '';
+    $bukti_lama = $_POST['bukti_lama'] ?? ($bayar['bukti'] ?? '');
+    $bukti = $bukti_lama;
 
-    // Validasi input minimal yang diperlukan
-    if ($nama && $posisi) {
-        try {
-            $stmt = $pdo->prepare("
-                INSERT INTO anggotas 
-                (nama, jabatan)
-                VALUES (?, ?)
-            ");
-            $stmt->execute([
-                $nama,
-                $posisi
-            ]);
-
-            header('Location: anggota.php');
-            exit;
-        } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
-        }
+    if (!$tanggal) {
+        $error = "Tanggal wajib diisi.";
+    } elseif (!is_numeric($jumlah) || $jumlah <= 0) {
+        $error = "Jumlah harus berupa angka lebih dari 0.";
     } else {
-        $error = 'Please fill in all required fields (Nama and Posisi).';
+        // Jika ada upload bukti baru
+        if (!empty($_FILES['bukti']['name'])) {
+            $targetDir = "uploads/";
+            if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+
+            $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+            // slug sederhana untuk nama file
+            $namaAnggotaSlug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($bayar['nama_anggota'] ?? 'anggota'));
+            $tanggalFile = date('Ymd', strtotime($tanggal));
+            $filename = "bayar-baju-{$namaAnggotaSlug}-{$tanggalFile}." . $ext;
+            $targetFile = $targetDir . $filename;
+
+            // Cegah nama duplikat
+            $counter = 1;
+            $base = pathinfo($filename, PATHINFO_FILENAME);
+            while (file_exists($targetFile)) {
+                $filename = "{$base}-{$counter}." . $ext;
+                $targetFile = $targetDir . $filename;
+                $counter++;
+            }
+
+            // Hapus file lama jika ada
+            if (!empty($bukti_lama) && file_exists($targetDir . $bukti_lama)) {
+                @unlink($targetDir . $bukti_lama);
+            }
+
+            if (move_uploaded_file($_FILES["bukti"]["tmp_name"], $targetFile)) {
+                $bukti = $filename;
+            } else {
+                $error = "Gagal mengunggah bukti pembayaran.";
+            }
+        }
+
+        // Update database jika tidak ada error
+        if (empty($error)) {
+            try {
+                $stmtUpd = $pdo->prepare("
+                    UPDATE bayar_baju
+                    SET jumlah = ?, tanggal = ?, bukti = ?
+                    WHERE id = ?
+                ");
+                $stmtUpd->execute([$jumlah, $tanggal, $bukti, $id]);
+                header('Location: baju-proses.php');
+                exit;
+            } catch (PDOException $e) {
+                $error = "Database error: " . $e->getMessage();
+            }
+        }
     }
 }
 ?>
@@ -65,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!--begin::Primary Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="title" content="Admin | Panitia Bona Taon PTS" />
-    <meta name="author" content="El - Total" />
+    <meta name="author" content="Kiel st" />
     <meta
         name="description"
         content="Admin Panitia Bona Taon PTS" />
@@ -129,13 +183,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Anggota</h3>
+                            <h3 class="mb-0">Edit-proses</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Anggota</li>
+                                <li class="breadcrumb-item"><a href="baju-proses.php">baju-proses</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Edit Data</li>
                             </ol>
                         </div>
                     </div>
@@ -155,42 +209,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Anggota Information</div>
+                                    <div class="card-title">Pembayaran Information</div>
                                 </div>
                                 <!--end::Header-->
-
                                 <?php if ($error): ?>
                                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                                 <?php endif; ?>
                                 <!--begin::Form-->
                                 <form method="POST" enctype="multipart/form-data">
-                                    <!--begin::Body-->
                                     <div class="card-body">
+                                        <input type="hidden" name="bukti_lama" value="<?= htmlspecialchars($bayar['bukti'] ?? '') ?>">
+
                                         <div class="mb-3">
-                                            <label for="nama" class="form-label">Nama</label>
-                                            <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="day" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi" required>
-                                                <option selected disabled value="">Choose ...</option>
-                                                <option value="hula">Hula hula</option>
-                                                <option value="boru">Boru</option>
-                                                <option value="bere">Bere & Ibebere</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a valid posisi Type.</div>
+                                            <label class="form-label">Nama Anggota</label>
+                                            <input type="text" class="form-control" value="<?= htmlspecialchars($bayar['nama_anggota']) ?>" disabled>
                                         </div>
 
+                                        <div class="mb-3">
+                                            <label class="form-label">Jumlah (Rp)</label>
+                                            <input type="number" name="jumlah" class="form-control" required min="1" value="<?= htmlspecialchars($bayar['jumlah']) ?>">
+                                        </div>
 
+                                        <div class="mb-3">
+                                            <label class="form-label">Tanggal Pembayaran</label>
+                                            <input type="date" name="tanggal" class="form-control" required value="<?= htmlspecialchars(date('Y-m-d', strtotime($bayar['tanggal']))) ?>">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Bukti Pembayaran</label>
+                                            <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                                            <?php if (!empty($bayar['bukti'])): ?>
+                                                <p class="mt-2">File saat ini:
+                                                    <a href="uploads/<?= htmlspecialchars($bayar['bukti']) ?>" target="_blank"><?= htmlspecialchars($bayar['bukti']) ?></a>
+                                                </p>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                    <!--end::Body-->
-                                    <!--begin::Footer-->
+
                                     <div class="card-footer">
-                                        <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="anggota.php" class="float-end btn btn-secondary">Back</a>
+                                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                                        <a href="bayar_baju-list.php" class="float-end btn btn-secondary">Kembali</a>
                                     </div>
-                                    <!--end::Footer-->
                                 </form>
                                 <!--end::Form-->
                             </div>
@@ -201,7 +260,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </main>
         <?php include 'footer.php' ?>
     </div>
-
 
     <!-- DataTables JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
@@ -258,6 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         });
     </script>
+
 </body>
 
 </html>
