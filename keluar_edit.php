@@ -1,65 +1,151 @@
 <?php
 session_start();
 require_once 'db.php';
-function slugify($text)
-{
-    // Ganti karakter non huruf/angka dengan strip
-    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
-    $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
-    $text = trim($text, '-');
-    // Hapus duplikat strip
-    $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
 
-    return $text ?: 'n-a';
-}
-// Cek jika admin sudah login
+$menu = 'keluar-proses';
+
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
+$role = (int)($_SESSION['role_id'] ?? 0);
 
-if (isset($_GET['id'])) {
-    $id = $_GET['id'];
-    $stmt = $pdo->prepare("SELECT * FROM anggota WHERE id = ?");
-    $stmt->execute([$id]);
-    $anggota = $stmt->fetch(PDO::FETCH_ASSOC);
+// helper slug untuk file
+function slugify($text)
+{
+    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    $text = preg_replace('~[^-\w]+~', '', $text);
+    $text = trim($text, '-');
+    $text = preg_replace('~-+~', '-', $text);
+    return strtolower($text ?: 'file');
+}
 
-    if (!$anggota) {
-        header('Location: anggota.php');
-        exit;
-    }
-} else {
-    header('Location: anggota.php');
+// Pastikan id ada
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header('Location: keluar-proses.php');
+    exit;
+}
+$id = (int) $_GET['id'];
+
+// Ambil data single pengeluaran
+$stmt = $pdo->prepare("SELECT * FROM pengeluaran WHERE id = ? LIMIT 1");
+$stmt->execute([$id]);
+$peng = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$peng) {
+    header('Location: keluar-proses.php');
+    exit;
+}
+
+// Cek hak akses: jika bukan role 1/2 harus sama seksi
+if (!in_array($role, [1, 2], true) && ((int)$peng['seksi'] !== $role)) {
+    header('Location: keluar-proses.php?error=unauthorized');
     exit;
 }
 
 $error = '';
+$success = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $tanggal = $_POST['tanggal'] ?? date('Y-m-d');
+    $nama = trim($_POST['nama'] ?? '');
+    $keterangan = $_POST['keterangan'] ?? '';
+    $jumlah = (float)($_POST['jumlah'] ?? 0);
 
-    // Ambil dan trim semua input
-    $nama           = trim($_POST['nama'] ?? '');
-    $posisi       = trim($_POST['posisi'] ?? '');
+    $notaOld = $peng['nota'] ?? '';
+    $bayarOld = $peng['bayar'] ?? '';
+    $notaFile = $notaOld;
+    $bayarFile = $bayarOld;
 
-    if ($nama && $posisi) {
-        $stmt = $pdo->prepare("UPDATE anggota SET nama = ?, jabatan = ? WHERE id = ?");
-        $stmt->execute([$nama, $posisi, $id]);
-        header('Location: anggota.php');
-        exit;
-    } else {
-        $error = 'Nama, Posisi fields are required.';
+    // Validasi
+    if (!$nama) {
+        $error = 'Nama wajib diisi.';
+    } elseif ($jumlah <= 0) {
+        $error = 'Jumlah harus lebih dari 0.';
+    }
+
+    // Pastikan folder uploads
+    $uploadDir = __DIR__ . '/uploads/';
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+
+    // Proses upload nota (jika ada)
+    if (empty($error) && !empty($_FILES['nota']['name'])) {
+        $ext = strtolower(pathinfo($_FILES['nota']['name'], PATHINFO_EXTENSION));
+        $base = slugify($nama) . '-nota-' . date('YmdHis');
+        $filename = $base . '.' . $ext;
+        $target = $uploadDir . $filename;
+
+        $i = 1;
+        while (file_exists($target)) {
+            $filename = $base . "-{$i}." . $ext;
+            $target = $uploadDir . $filename;
+            $i++;
+        }
+
+        if (move_uploaded_file($_FILES['nota']['tmp_name'], $target)) {
+            // hapus file lama jika ada
+            if (!empty($notaOld) && file_exists($uploadDir . $notaOld)) {
+                @unlink($uploadDir . $notaOld);
+            }
+            $notaFile = $filename;
+        } else {
+            $error = 'Gagal mengunggah file nota.';
+        }
+    }
+
+    // Proses upload bayar (jika ada)
+    if (empty($error) && !empty($_FILES['bayar']['name'])) {
+        $ext = strtolower(pathinfo($_FILES['bayar']['name'], PATHINFO_EXTENSION));
+        $base = slugify($nama) . '-bayar-' . date('YmdHis');
+        $filename = $base . '.' . $ext;
+        $target = $uploadDir . $filename;
+
+        $i = 1;
+        while (file_exists($target)) {
+            $filename = $base . "-{$i}." . $ext;
+            $target = $uploadDir . $filename;
+            $i++;
+        }
+
+        if (move_uploaded_file($_FILES['bayar']['tmp_name'], $target)) {
+            if (!empty($bayarOld) && file_exists($uploadDir . $bayarOld)) {
+                @unlink($uploadDir . $bayarOld);
+            }
+            $bayarFile = $filename;
+        } else {
+            $error = 'Gagal mengunggah file bukti bayar.';
+        }
+    }
+
+    // Jika tidak error, update DB
+    if (empty($error)) {
+        try {
+            $stmtUpd = $pdo->prepare("
+                UPDATE pengeluaran
+                SET tanggal = ?, nama = ?, keterangan = ?, jumlah = ?, nota = ?, bayar = ?
+                WHERE id = ?
+            ");
+            $stmtUpd->execute([
+                $tanggal,
+                $nama,
+                $keterangan,
+                $jumlah,
+                $notaFile,
+                $bayarFile,
+                $id
+            ]);
+            header('Location: keluar-proses.php?updated=1');
+            exit;
+        } catch (PDOException $e) {
+            $error = 'Database error: ' . $e->getMessage();
+        }
     }
 }
 ?>
-
 <!doctype html>
 <html lang="en">
-<!--begin::Head-->
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -67,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!--begin::Primary Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="title" content="Panitia Bona Taon PTS" />
-    <meta name="author" content="Kiel st" />
+    <meta name="author" content="El - Total" />
     <meta
         name="description"
         content="Panitia Bona Taon PTS" />
@@ -108,101 +194,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         crossorigin="anonymous" />
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.12.1/css/dataTables.bootstrap5.min.css" />
+    <!-- Summernote CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
 
 </head>
-<!--end::Head-->
-<!--begin::Body-->
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
-    <!--begin::App Wrapper-->
     <div class="">
-        <!--begin::Header-->
         <?php include 'header.php' ?>
-        <!--end::Header-->
-        <!--begin::Sidebar-->
         <?php include 'sidebar.php' ?>
-        <!--end::Sidebar-->
-        <!--begin::App Main-->
         <main class="app-main">
-            <!--begin::App Content Header-->
-            <div class="app-content-header">
-                <!--begin::Container-->
-                <div class="container-fluid">
-                    <!--begin::Row-->
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <h3 class="mb-0">Edit Anggota</h3>
-                        </div>
-                        <div class="col-sm-6">
-                            <ol class="breadcrumb float-sm-end">
-                                <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Edit Anggota</li>
-                            </ol>
-                        </div>
-                    </div>
-                    <!--end::Row-->
-                </div>
-                <!--end::Container-->
-            </div>
-            <!--end::App Content Header-->
-            <!--begin::App Content-->
             <div class="app-content">
-                <!--begin::Container-->
                 <div class="container-fluid">
-                    <!--begin::Row-->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <!--begin::Quick Example-->
-                            <div class="card card-primary card-outline mb-4">
-                                <!--begin::Header-->
-                                <div class="card-header">
-                                    <div class="card-title">Anggota Information</div>
+                    <div class="card card-primary card-outline mb-4">
+                        <div class="card-header">
+                            <h3 class="card-title">Edit Pengeluaran</h3>
+                        </div>
+                        <div class="card-body">
+                            <?php if ($error): ?>
+                                <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                            <?php endif; ?>
+                            <form method="POST" enctype="multipart/form-data">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Tanggal</label>
+                                        <input type="date" name="tanggal" class="form-control" value="<?= htmlspecialchars(date('Y-m-d', strtotime($peng['tanggal'] ?? date('Y-m-d')))) ?>" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Judul Pengeluaran</label>
+                                        <input type="text" name="nama" class="form-control" value="<?= htmlspecialchars($peng['nama'] ?? '') ?>" required>
+
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Jumlah (Rp)</label>
+                                        <input type="number" name="jumlah" class="form-control" min="0" value="<?= htmlspecialchars($peng['jumlah'] ?? 0) ?>" required>
+
+                                    </div>
+
+                                    <div class=" col-12">
+                                        <label class="form-label">Keterangan</label>
+                                        <textarea name="keterangan" id="keterangan" class="form-control"><?= htmlspecialchars($peng['keterangan'] ?? '') ?></textarea>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Upload Nota (opsional)</label>
+                                        <input type="file" name="nota" class="form-control" accept="image/*,application/pdf">
+                                        <?php if (!empty($peng['nota'])): ?>
+                                            <p class="mt-2">File saat ini:
+                                                <?php if (file_exists(__DIR__ . '/uploads/' . $peng['nota'])): ?>
+                                                    <a href="uploads/<?= htmlspecialchars($peng['nota']) ?>" target="_blank"><?= htmlspecialchars($peng['nota']) ?></a>
+                                                <?php else: ?>
+                                                    <?= htmlspecialchars($peng['nota']) ?>
+                                                <?php endif; ?>
+                                            </p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">Upload Bukti Bayar (opsional)</label>
+                                            <input type="file" name="bayar" class="form-control" accept="image/*,application/pdf">
+                                            <?php if (!empty($peng['bayar'])): ?>
+                                                <p class="mt-2">File saat ini:
+                                                    <?php if (file_exists(__DIR__ . '/uploads/' . $peng['bayar'])): ?>
+                                                        <a href="uploads/<?= htmlspecialchars($peng['bayar']) ?>" target="_blank"><?= htmlspecialchars($peng['bayar']) ?></a>
+                                                    <?php else: ?>
+                                                        <?= htmlspecialchars($peng['bayar']) ?>
+                                                    <?php endif; ?>
+                                                </p>
+                                            <?php endif; ?>
+                                        </div>
+
+                                    <?php } ?>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                                        <a href="keluar-proses.php" class="btn btn-secondary float-end">Kembali</a>
+                                    </div>
                                 </div>
-                                <!--end::Header-->
-                                <?php if ($error): ?>
-                                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-                                <?php endif; ?>
-                                <!--begin::Form-->
-                                <form method="POST" enctype="multipart/form-data">
-                                    <!--begin::Body-->
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="nama" class="form-label">Nama</label>
-                                            <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" value="<?= htmlspecialchars($anggota['nama']) ?>" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="posisi" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi">
-                                                <option disabled value="">Choose ...</option>
-                                                <option value="hula" <?= ($anggota['jabatan'] === 'hula') ? 'selected' : '' ?>>Hula hula</option>
-                                                <option value="boru" <?= ($anggota['jabatan'] === 'boru') ? 'selected' : '' ?>>Boru</option>
-                                                <option value="Bere" <?= ($anggota['jabatan'] === 'bere') ? 'selected' : '' ?>>Bere & Ibebere</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a valid Posisi.</div>
-                                        </div>
-
-
-                                    </div>
-                                    <!--end::Body-->
-                                    <!--begin::Footer-->
-                                    <div class="card-footer">
-                                        <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="anggota.php" class="float-end btn btn-secondary">Back</a>
-                                    </div>
-                                    <!--end::Footer-->
-                                </form>
-                                <!--end::Form-->
-                            </div>
-
+                            </form>
                         </div>
                     </div>
                 </div>
+            </div>
         </main>
         <?php include 'footer.php' ?>
     </div>
-
     <!-- DataTables JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
@@ -220,45 +296,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
         crossorigin="anonymous"></script>
     <script src="assets/js/adminlte.js"></script>
-    <script>
-        const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
-        const Default = {
-            scrollbarTheme: 'os-theme-light',
-            scrollbarAutoHide: 'leave',
-            scrollbarClickScroll: true,
-        };
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarWrapper = document.querySelector(SELECTOR_SIDEBAR_WRAPPER);
-            if (sidebarWrapper && typeof OverlayScrollbarsGlobal?.OverlayScrollbars !== 'undefined') {
-                OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
-                    scrollbars: {
-                        theme: Default.scrollbarTheme,
-                        autoHide: Default.scrollbarAutoHide,
-                        clickScroll: Default.scrollbarClickScroll,
-                    },
-                });
-            }
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
     <script>
         $(document).ready(function() {
-            // Inisialisasi DataTables pada tabel
-            $('table').DataTable({
-                paging: true, // Aktifkan pagination
-                searching: true, // Aktifkan fitur pencarian
-                lengthChange: false, // Menonaktifkan pilihan jumlah item per halaman
-                pageLength: 5, // Menentukan jumlah baris per halaman
-                language: {
-                    search: "Cari:",
-                    paginate: {
-                        previous: "Prev",
-                        next: "Next"
-                    }
-                }
+            $('#keterangan').summernote({
+                placeholder: 'Tulis keterangan di sini...',
+                tabsize: 2,
+                height: 160,
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link', 'picture']],
+                    ['view', ['fullscreen', 'codeview']]
+                ]
             });
         });
     </script>
-
 </body>
 
 </html>

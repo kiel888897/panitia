@@ -8,9 +8,18 @@ if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
+$seksi = $_SESSION['role_id'] ?? null;
 
-$stmt = $pdo->query("SELECT * FROM anggota  ORDER BY id DESC");
-$anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Ambil data dari tabel pengeluaran:
+// Jika role 1 atau 2 -> tampilkan semua, selain itu filter berdasarkan seksi = role_id
+if ($seksi == 1 || $seksi == 2) {
+    $stmt = $pdo->query("SELECT p.*, ar.nama_role AS seksi_name FROM pengeluaran p LEFT JOIN admin_role ar ON p.seksi = ar.id ORDER BY p.id DESC");
+    $pengeluarans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $stmt = $pdo->prepare("SELECT p.*, ar.nama_role AS seksi_name FROM pengeluaran p LEFT JOIN admin_role ar ON p.seksi = ar.id WHERE p.seksi = ? ORDER BY p.id DESC");
+    $stmt->execute([$seksi]);
+    $pengeluarans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -86,12 +95,12 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Anggota</h3>
+                            <h3 class="mb-0">Pengeluaran</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Anggota</li>
+                                <li class="breadcrumb-item active" aria-current="page">Pengeluaran</li>
                             </ol>
                         </div>
                     </div>
@@ -111,44 +120,52 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="card">
 
                                 <div class="card-body">
-                                    <a href="anggota_add.php" class="btn btn-success">Add New anggota</a>
+                                    <a href="keluar_add.php" class="btn btn-success">Tambah Pengeluaran</a>
 
                                     <table class="table table-bordered" id="eventTable">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Tanggal</th>
+                                                <th>Seksi</th>
                                                 <th>Nama</th>
-                                                <th>Posisi</th>
+                                                <th>Keterangan</th>
+                                                <th>Jumlah (Rp)</th>
+                                                <th>Nota</th>
+                                                <th>Bayar</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <?php $i = 1;
-                                            foreach ($anggotas as $anggota): ?>
+                                            foreach ($pengeluarans as $p): ?>
                                                 <tr>
                                                     <td><?= $i++ ?></td>
-                                                    <td><?= htmlspecialchars(ucwords($anggota['nama'])) ?></td>
+                                                    <td><?= htmlspecialchars(date('Y-m-d', strtotime($p['tanggal'] ?? ''))); ?></td>
+                                                    <td><?= htmlspecialchars($p['seksi_name'] ?? $p['seksi']); ?></td>
+                                                    <td><?= htmlspecialchars($p['nama']); ?></td>
+                                                    <td><?= ($p['keterangan']); ?></td>
+                                                    <td style="text-align:right"><?= number_format((float)($p['jumlah'] ?? 0), 0, ',', '.'); ?></td>
                                                     <td>
-                                                        <?php
-                                                        $jabatan = strtolower($anggota['jabatan']); // pastikan huruf kecil semua dulu
-                                                        if ($jabatan === 'hula') {
-                                                            echo 'Hula Hula';
-                                                        } elseif ($jabatan === 'bere') {
-                                                            echo 'Bere & Ibebere';
-                                                        } else {
-                                                            echo ucfirst($jabatan); // default: misal Boru
-                                                        }
-                                                        ?>
+                                                        <?php if (!empty($p['nota']) && file_exists(__DIR__ . '/uploads/' . $p['nota'])): ?>
+                                                            <a href="uploads/<?= htmlspecialchars($p['nota']); ?>" target="_blank">Lihat</a>
+                                                        <?php else: ?>
+                                                            <?= htmlspecialchars($p['nota'] ?? '-'); ?>
+                                                        <?php endif; ?>
                                                     </td>
-
-
+                                                    <td>
+                                                        <?php if (!empty($p['bayar']) && file_exists(__DIR__ . '/uploads/' . $p['bayar'])): ?>
+                                                            <a href="uploads/<?= htmlspecialchars($p['bayar']); ?>" target="_blank">Lihat</a>
+                                                        <?php else: ?>
+                                                            <?= htmlspecialchars($p['bayar'] ?? '-'); ?>
+                                                        <?php endif; ?>
+                                                    </td>
                                                     <td>
                                                         <div class="btn-group" role="group" aria-label="Actions">
-                                                            <a href="anggota_edit.php?id=<?= $anggota['id'] ?>" class="btn btn-warning btn-sm" aria-label="Edit anggota" title="Edit anggota">✏️</a>
-                                                            <a href="anggota_delete.php?id=<?= $anggota['id'] ?>" class="btn btn-danger btn-sm" aria-label="Delete anggota" title="Delete anggota" onclick="return confirm('Are you sure?')">🗑️</a>
+                                                            <a href="keluar_edit.php?id=<?= $p['id'] ?>" class="btn btn-warning btn-sm" title="Edit">✏️</a>
+                                                            <a href="keluar_delete.php?id=<?= $p['id'] ?>" class="btn btn-danger btn-sm" title="Delete" onclick="return confirm('Are you sure?')">🗑️</a>
                                                         </div>
                                                     </td>
-
                                                 </tr>
                                             <?php endforeach; ?>
                                         </tbody>
@@ -169,12 +186,12 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <?php if (isset($_GET['approved'])): ?>
+    <?php if (isset($_GET['added'])): ?>
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Approved!',
-                text: 'The Anggota has been successfully approved and is now visible to the public.',
+                title: 'Data Approved!',
+                text: 'The data has been successfully input.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });
@@ -183,8 +200,8 @@ $anggotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <script>
             Swal.fire({
                 icon: 'success',
-                title: 'Anggota Deleted!',
-                text: 'The Anggota has been successfully removed from the system.',
+                title: 'Data Deleted!',
+                text: 'The Data has been successfully removed from the system.',
                 confirmButtonText: 'OKAY',
                 confirmButtonColor: '#28a745'
             });

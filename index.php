@@ -121,7 +121,10 @@ $total_pengeluaran = $total2['total_pengeluaran'];
                   </div>
                 </div>
                 <div>
-                  <h6 class="card-title text-secondary mb-1">Total Pemasukan</h6>
+
+                  <div>
+                    <h4 class=" text-secondary mb-1">Total Pemasukan</h4>
+                  </div>
                   <div class="align-items-baseline">
                     <h3 class="fw-bold text-success mb-0" style="line-height: 1;"> Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></h3>
                   </div>
@@ -141,7 +144,9 @@ $total_pengeluaran = $total2['total_pengeluaran'];
                   </div>
                 </div>
                 <div>
-                  <h6 class="card-title text-secondary mb-1">Total Pengeluaran</h6>
+                  <div>
+                    <h4 class=" text-secondary mb-1">Total Pengeluaran</h4>
+                  </div>
                   <div class="align-items-baseline">
                     <h3 class="fw-bold text-danger mb-0" style="line-height: 1;">Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></h3>
                   </div>

@@ -1,60 +1,116 @@
 <?php
+$menu = 'keluar-proses';
 session_start();
 require_once 'db.php';
-function slugify($text)
-{
-    // Ganti karakter non huruf/angka dengan strip
-    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    // Transliterate ke ASCII
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-    // Hapus karakter yang tidak diinginkan
-    $text = preg_replace('~[^-\w]+~', '', $text);
-    // Trim strip
-    $text = trim($text, '-');
-    // Hapus duplikat strip
-    $text = preg_replace('~-+~', '-', $text);
-    // Lowercase
-    $text = strtolower($text);
 
-    return $text ?: 'n-a';
-}
-// Cek apakah admin sudah login
+// Cek login
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
 
+$seksi = $_SESSION['role_id'] ?? null;
 $error = '';
+$success = '';
+// helper: buat slug sederhana untuk nama file
+function slugify($text)
+{
+    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    $text = preg_replace('~[^-\w]+~', '', $text);
+    $text = trim($text, '-');
+    $text = preg_replace('~-+~', '-', $text);
+    return strtolower($text ?: 'item');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Ambil dan trim semua input
-    $nama           = trim($_POST['nama'] ?? '');
-    $posisi       = trim($_POST['posisi'] ?? '');
+    $tanggal = $_POST['tanggal'] ?? date('Y-m-d');
+    $nama = trim($_POST['nama'] ?? '');
+    $keterangan = trim($_POST['keterangan'] ?? '');
+    $jumlah = (float)($_POST['jumlah'] ?? 0);
 
-    // Validasi input minimal yang diperlukan
-    if ($nama && $posisi) {
-        try {
-            $stmt = $pdo->prepare("
-                INSERT INTO anggotas 
-                (nama, jabatan)
-                VALUES (?, ?)
-            ");
-            $stmt->execute([
-                $nama,
-                $posisi
-            ]);
+    $notaFileName = '';
+    $bayarFileName = '';
 
-            header('Location: anggota.php');
-            exit;
-        } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
-        }
+    // validasi sederhana
+    if (!$nama) {
+        $error = 'Nama wajib diisi.';
+    } elseif (!$keterangan) {
+        $error = 'Keterangan wajib diisi.';
+    } elseif ($jumlah <= 0) {
+        $error = 'Jumlah harus lebih dari 0.';
     } else {
-        $error = 'Please fill in all required fields (Nama and Posisi).';
+        // pastikan folder upload ada
+        $targetDir = __DIR__ . '/uploads/';
+        if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+
+        // proses upload nota (opsional)
+        if (!empty($_FILES['nota']['name'])) {
+            $ext = strtolower(pathinfo($_FILES['nota']['name'], PATHINFO_EXTENSION));
+            $base = slugify($nama) . '-nota-' . date('YmdHis', strtotime($tanggal));
+            $notaFileName = $base . '.' . $ext;
+            $target = $targetDir . $notaFileName;
+
+            // hindari duplikat
+            $i = 1;
+            while (file_exists($target)) {
+                $notaFileName = $base . "-{$i}." . $ext;
+                $target = $targetDir . $notaFileName;
+                $i++;
+            }
+
+            if (!move_uploaded_file($_FILES['nota']['tmp_name'], $target)) {
+                $error = 'Gagal mengunggah file nota.';
+            }
+        }
+
+        // proses upload bayar (opsional)
+        if (empty($error) && !empty($_FILES['bayar']['name'])) {
+            $ext = strtolower(pathinfo($_FILES['bayar']['name'], PATHINFO_EXTENSION));
+            $base = slugify($nama) . '-bayar-' . date('YmdHis', strtotime($tanggal));
+            $bayarFileName = $base . '.' . $ext;
+            $target = $targetDir . $bayarFileName;
+
+            $i = 1;
+            while (file_exists($target)) {
+                $bayarFileName = $base . "-{$i}." . $ext;
+                $target = $targetDir . $bayarFileName;
+                $i++;
+            }
+
+            if (!move_uploaded_file($_FILES['bayar']['tmp_name'], $target)) {
+                $error = 'Gagal mengunggah file bayar.';
+            }
+        }
+
+        // insert ke database jika tidak ada error
+        if (empty($error)) {
+            try {
+                $stmt = $pdo->prepare("
+                    INSERT INTO pengeluaran (tanggal, seksi, nama, keterangan, jumlah, nota, bayar)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $tanggal,
+                    $seksi,
+                    $nama,
+                    $keterangan,
+                    $jumlah,
+                    $notaFileName,
+                    $bayarFileName
+                ]);
+                header('Location: keluar-proses.php?added=1');
+                exit;
+            } catch (PDOException $e) {
+                $error = 'Database error: ' . $e->getMessage();
+                // hapus file yang sudah terupload jika DB gagal
+                if ($notaFileName && file_exists($targetDir . $notaFileName)) @unlink($targetDir . $notaFileName);
+                if ($bayarFileName && file_exists($targetDir . $bayarFileName)) @unlink($targetDir . $bayarFileName);
+            }
+        }
     }
 }
 ?>
-
 <!doctype html>
 <html lang="en">
 <!--begin::Head-->
@@ -106,6 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         crossorigin="anonymous" />
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.12.1/css/dataTables.bootstrap5.min.css" />
+    <!-- Summernote CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
 
 </head>
 <!--end::Head-->
@@ -129,13 +187,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Anggota</h3>
+                            <h3 class="mb-0">Add Pengeluaran</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="anggota.php">Anggota</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Anggota</li>
+                                <li class="breadcrumb-item"><a href="keluar-proses.php">Pengeluaran</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Add Pengeluaran</li>
                             </ol>
                         </div>
                     </div>
@@ -155,44 +213,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Anggota Information</div>
+                                    <div class="card-title">Pengeluaran Information</div>
                                 </div>
                                 <!--end::Header-->
-
                                 <?php if ($error): ?>
                                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                                 <?php endif; ?>
-                                <!--begin::Form-->
-                                <form method="POST" enctype="multipart/form-data">
-                                    <!--begin::Body-->
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="nama" class="form-label">Nama</label>
-                                            <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="day" class="form-label">Posisi</label>
-                                            <select class="form-select" name="posisi" id="posisi" required>
-                                                <option selected disabled value="">Choose ...</option>
-                                                <option value="hula">Hula hula</option>
-                                                <option value="boru">Boru</option>
-                                                <option value="bere">Bere & Ibebere</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a valid posisi Type.</div>
-                                        </div>
 
+                                <div class="card-body">
+                                    <form method="POST" enctype="multipart/form-data">
+                                        <div class="row g-3">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Tanggal</label>
+                                                <input type="date" name="tanggal" class="form-control" value="<?= htmlspecialchars(date('Y-m-d')) ?>" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Judul Pengeluaran</label>
+                                                <input type="text" name="nama" class="form-control" required>
+                                                <div class="form-text text-muted">Contoh: Cetak Spanduk</div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Jumlah (Rp)</label>
+                                                <input type="number" name="jumlah" class="form-control" min="0" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Keterangan</label>
+                                                <textarea id="keterangan" name="keterangan" class="form-control" required></textarea>
+                                            </div>
 
-                                    </div>
-                                    <!--end::Body-->
-                                    <!--begin::Footer-->
-                                    <div class="card-footer">
-                                        <button type="submit" class="btn btn-primary">Submit</button>
-                                        <a href="anggota.php" class="float-end btn btn-secondary">Back</a>
-                                    </div>
-                                    <!--end::Footer-->
-                                </form>
-                                <!--end::Form-->
+                                            <div class="col-md-6">
+                                                <label class="form-label">Upload Nota (opsional)</label>
+                                                <input type="file" name="nota" class="form-control" accept="image/*,application/pdf">
+                                            </div>
+                                            <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Upload Bukti Bayar (opsional)</label>
+                                                    <input type="file" name="bayar" class="form-control" accept="image/*,application/pdf">
+                                                </div>
+
+                                            <?php } ?>
+                                            <div class="col-12">
+                                                <button type="submit" class="btn btn-primary">Simpan</button>
+                                                <a href="keluar-proses.php" class="btn btn-secondary float-end">Kembali</a>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    <!--end::Form-->
+                                </div>
                             </div>
 
                         </div>
@@ -220,6 +288,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
         crossorigin="anonymous"></script>
     <script src="assets/js/adminlte.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.12.1/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#keterangan').summernote({
+                placeholder: 'Tulis keterangan di sini...<br> contoh: 2 lembar spanduk ukuran 2x3.',
+                tabsize: 2,
+                height: 160,
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link', 'picture']],
+                    ['view', ['fullscreen', 'codeview']]
+                ]
+            });
+        });
+    </script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.10.1/browser/overlayscrollbars.browser.es6.min.js"
+        integrity="sha256-dghWARbRe2eLlIJ56wNB+b760ywulqK3DzZYEpsg2fQ="
+        crossorigin="anonymous"></script>
+
     <script>
         const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
         const Default = {

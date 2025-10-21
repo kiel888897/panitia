@@ -139,31 +139,33 @@
                         </ul>
                     </li>
                 <?php } ?>
-                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
-                    <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
-                        <a href="#" class="nav-link <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'active'; ?>">
-                            <i class="nav-icon bi bi-cash-coin"></i>
-                            <p>
-                                Pengeluaran
-                                <i class="nav-arrow bi bi-chevron-right"></i>
-                            </p>
-                        </a>
-                        <ul class="nav nav-treeview">
+                <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
+                    <a href="#" class="nav-link <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'active'; ?>">
+                        <i class="nav-icon bi bi-cash-coin"></i>
+                        <p>
+                            Pengeluaran
+                            <i class="nav-arrow bi bi-chevron-right"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+
+                        <!-- <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
                             <li class="nav-item">
-                                <a href="#.php" class="nav-link <?php if ($menu === 'keluar') echo 'active'; ?>">
+                                <a href="keluar.php" class="nav-link <?php if ($menu === 'keluar') echo 'active'; ?>">
                                     <i class="bi bi-circle"></i>
                                     <p>Data Pengeluaran</p>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a href="#.php" class="nav-link <?php if ($menu === 'keluar-proses') echo 'active'; ?>">
-                                    <i class="bi bi-circle"></i>
-                                    <p>Proses Pengeluaran</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                <?php } ?>
+
+                        <?php } ?> -->
+                        <li class="nav-item">
+                            <a href="keluar-proses.php" class="nav-link <?php if ($menu === 'keluar-proses') echo 'active'; ?>">
+                                <i class="bi bi-circle"></i>
+                                <p>Proses Pengeluaran</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
 
                 <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
                     <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
