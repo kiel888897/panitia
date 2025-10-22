@@ -8,7 +8,11 @@ if (!isset($_GET['id'])) {
 }
 
 $anggota_id = (int) $_GET['id'];
-$totalQty = isset($_GET['qty']) ? (int) $_GET['qty'] : 0;
+
+$stmt = $pdo->prepare("SELECT SUM(qty) AS total_qty FROM order_items WHERE order_id = ?");
+$stmt->execute([$anggota_id]);
+$totalQty = (int) $stmt->fetchColumn();
+
 $targetBaju = $totalQty * 100000; // harga satuan baju = 100rb
 
 // Ambil data anggota
@@ -45,6 +49,9 @@ if ($totalBayar >= $targetBaju && $targetBaju > 0) {
     $status = 'Belum Bayar';
     $statusClass = 'secondary';
 }
+// Hitung sisa pembayaran
+$sisaPembayaran = max($targetBaju - $totalBayar, 0);
+
 ?>
 <!doctype html>
 <html lang="id">
@@ -89,6 +96,7 @@ if ($totalBayar >= $targetBaju && $targetBaju > 0) {
                             </p>
                             <p><strong>Total Pesanan:</strong> Rp <?= number_format($targetBaju, 0, ',', '.') ?></p>
                             <p><strong>Total Pembayaran:</strong> Rp <?= number_format($totalBayar, 0, ',', '.') ?></p>
+                            <p><strong>Sisa Pembayaran:</strong> Rp <?= number_format($sisaPembayaran, 0, ',', '.') ?></p>
                         </div>
                     </div>
 
