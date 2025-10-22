@@ -191,7 +191,7 @@ $anggotaList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     <td><?= number_format($totalToktok, 0, ',', '.') ?></td>
                                                     <td>
                                                         <?php if ($totalToktok > 0): ?>
-                                                            <a target="_blank" href="toktok_detail.php?id=<?= $row['anggota_id'] ?>" class="btn btn-link p-0">Lihat Detail</a>
+                                                            <a target="_blank" href="toktok_detail.php?id=<?= $row['anggota_id'] ?>" class="btn btn-link p-0">Detail Pembayaran</a>
                                                         <?php else: ?>
                                                             <span class="text-muted">-</span>
                                                         <?php endif; ?>

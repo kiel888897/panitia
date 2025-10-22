@@ -197,8 +197,8 @@
                     </ul>
                 </li>
 
-                <li class="nav-item has-treeview  <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'menu-open'; ?>">
-                    <a href="#" class="nav-link <?php if ($menu === 'keluar' || $menu === 'keluar-proses') echo 'active'; ?>">
+                <li class="nav-item has-treeview  <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran'])) echo 'menu-open'; ?>">
+                    <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran'])) echo 'active'; ?>">
                         <i class="nav-icon bi bi-file-earmark-text"></i>
                         <p>
                             Laporan
@@ -208,7 +208,7 @@
                     <ul class="nav nav-treeview">
 
                         <!-- Laporan Pemasukan -->
-                        <li class="nav-item has-treeview">
+                        <li class="nav-item has-treeview <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon'])) echo 'menu-open'; ?>">
                             <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon'])) echo 'active'; ?>">
                                 <i class="bi bi-graph-up"></i>
                                 <p>
@@ -218,7 +218,7 @@
                             </a>
                             <ul class="nav nav-treeview ps-3">
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link <?php if ($menu === 'laptoktok') echo 'active'; ?>">
+                                    <a href="laporan-toktok.php" class="nav-link <?php if ($menu === 'laptoktok') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Tok-tok Ripe</p>
                                     </a>
@@ -296,7 +296,7 @@
 
                         <!-- Laporan Sumbangan (bisa tetap terpisah jika perlu) -->
                         <li class="nav-item">
-                            <a href="#.php" class="nav-link <?php if ($menu === 'sumbangan-produk') echo 'active'; ?>">
+                            <a href="laporan-sumbangan-produk.php" class="nav-link <?php if ($menu === 'sumbangan-produk') echo 'active'; ?>">
                                 <i class="bi bi-circle"></i>
                                 <p>Sumbangan Produk</p>
                             </a>

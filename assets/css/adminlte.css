@@ -15380,3 +15380,7 @@ html.maximized-card {
 .status-lunas { color: green !important; }      /* hijau muda */
 .status-cicilan { color: orange !important; }    /* kuning muda */
 .status-belum { color: #000 !important; }
+.sidebar-wrapper .sidebar-menu > .nav-item.menu-open .nav-link.active:not(:hover) {
+    --lte-sidebar-menu-active-bg: transparent;
+    color: #9dddbf;
+}

@@ -1,17 +1,3 @@
-<?php
-session_start();
-require_once 'db.php';
-
-// Cek jika admin sudah login
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-// Ambil daftar restoran
-$stmt = $pdo->query("SELECT * FROM restaurants");
-$restaurants = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
 <!doctype html>
 <html lang="en">
 <!--begin::Head-->
