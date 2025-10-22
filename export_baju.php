@@ -45,6 +45,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <script>
         const data = <?php echo json_encode($data); ?>;
         const baseURL = "<?= htmlspecialchars('https://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF'])) ?>/baju_detail.php?id=";
+        const tanggal = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
 
         // ===== EXCEL EXPORT =====
         document.getElementById("exportExcel").addEventListener("click", function() {
@@ -53,6 +54,9 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 ["No", "Nama Anggota", "Pesanan", "Total Qty", "Total Pesanan (Rp)", "Total Pembayaran (Rp)", "Keterangan", "Status"]
             ];
             let i = 1;
+            let totalQty = 0,
+                totalPesananAll = 0,
+                totalBayarAll = 0;
 
             data.forEach(row => {
                 const totalPesanan = parseInt(row.total_pesanan) || 0;
@@ -66,12 +70,20 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     row.nama,
                     row.pesanan || "-",
                     row.total_qty || 0,
-                    totalPesanan,
-                    totalBayar,
+                    "Rp " + totalPesanan.toLocaleString('id-ID'),
+                    "Rp " + totalBayar.toLocaleString('id-ID'),
                     ket,
                     status
                 ]);
+
+                totalQty += parseInt(row.total_qty) || 0;
+                totalPesananAll += totalPesanan;
+                totalBayarAll += totalBayar;
             });
+
+            // Tambahkan baris total di akhir
+            wsData.push([]);
+            wsData.push(["", "TOTAL", "", totalQty, "Rp " + totalPesananAll.toLocaleString('id-ID'), "Rp " + totalBayarAll.toLocaleString('id-ID'), "", ""]);
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             XLSX.utils.book_append_sheet(wb, ws, "Laporan Baju PTS");
@@ -82,7 +94,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }));
             ws['!cols'] = colWidths;
 
-            XLSX.writeFile(wb, "laporan_baju_pts.xlsx");
+            XLSX.writeFile(wb, `laporan_baju_pts_${tanggal}.xlsx`);
         });
 
         // ===== PDF EXPORT =====
@@ -131,7 +143,11 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 ]
             ];
 
-            let i = 1;
+            let i = 1,
+                totalQty = 0,
+                totalPesananAll = 0,
+                totalBayarAll = 0;
+
             data.forEach(row => {
                 const totalPesanan = parseInt(row.total_pesanan) || 0;
                 const totalBayar = parseInt(row.total_bayar) || 0;
@@ -165,11 +181,11 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         alignment: 'center'
                     },
                     {
-                        text: totalPesanan.toLocaleString('id-ID'),
+                        text: 'Rp ' + totalPesanan.toLocaleString('id-ID'),
                         alignment: 'center'
                     },
                     {
-                        text: totalBayar.toLocaleString('id-ID'),
+                        text: 'Rp ' + totalBayar.toLocaleString('id-ID'),
                         alignment: 'center'
                     },
                     linkCell,
@@ -178,12 +194,53 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         alignment: 'center'
                     }
                 ]);
+
+                totalQty += parseInt(row.total_qty) || 0;
+                totalPesananAll += totalPesanan;
+                totalBayarAll += totalBayar;
             });
+
+            // Tambahkan total di akhir tabel
+            bodyData.push([{
+                    text: '',
+                    colSpan: 2
+                }, {}, {
+                    text: 'TOTAL',
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: totalQty,
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: 'Rp ' + totalPesananAll.toLocaleString('id-ID'),
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: 'Rp ' + totalBayarAll.toLocaleString('id-ID'),
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: '',
+                    colSpan: 2
+                }, {}
+            ]);
 
             const docDefinition = {
                 content: [{
-                        text: 'Laporan Baju PTS',
+                        text: `Laporan Baju PTS`,
                         style: 'header'
+                    },
+                    {
+                        text: `Tanggal: (${tanggal})`,
+                        margin: [0, 0, 0, 10],
+                        alignment: 'right',
+                        italics: true,
+                        fontSize: 10
                     },
                     {
                         table: {
@@ -209,7 +266,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 pageSize: 'A4'
             };
 
-            pdfMake.createPdf(docDefinition).download('laporan_baju_pts.pdf');
+            pdfMake.createPdf(docDefinition).download(`laporan_baju_pts_${tanggal}.pdf`);
         });
     </script>
 </body>

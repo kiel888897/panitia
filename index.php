@@ -14,6 +14,8 @@ $query = "
 SELECT 
     IFNULL((SELECT SUM(toktok + sukarela) FROM iuran), 0) +
     IFNULL((SELECT SUM(jumlah) FROM sumbangan WHERE jenis = 'dana'), 0) +
+    IFNULL((SELECT SUM(bayar) FROM bayar_kupon), 0) +
+    IFNULL((SELECT SUM(jumlah) FROM bayar_baju), 0) +
     IFNULL((SELECT SUM(jumlah) FROM bayar_silua), 0) AS total_pemasukan
 ";
 

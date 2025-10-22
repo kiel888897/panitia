@@ -50,6 +50,9 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 ["No", "Nama Anggota", "Toktok Ripe (Rp)", "Sukarela (Rp)", "Total Pembayaran (Rp)", "Keterangan", "Status"]
             ];
             let i = 1;
+            let grandToktok = 0;
+            let grandSukarela = 0;
+            let grandTotal = 0;
 
             data.forEach(row => {
                 const totalToktok = parseInt(row.total_toktok);
@@ -57,16 +60,18 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 const status = totalToktok >= toktokRipe ? "Lunas" : (totalToktok > 0 ? "Cicilan" : "Belum Bayar");
                 const ket = totalToktok > 0 ? `Detail Pembayaran (${baseURL + row.anggota_id})` : "-";
 
-                wsData.push([
-                    i++,
-                    row.nama,
-                    toktokRipe,
-                    totalSukarela,
-                    totalToktok,
-                    ket,
-                    status
-                ]);
+                wsData.push([i++, row.nama, toktokRipe, totalSukarela, totalToktok, ket, status]);
+
+                grandToktok += toktokRipe;
+                grandSukarela += totalSukarela;
+                grandTotal += totalToktok;
             });
+
+            // Tambahkan baris total
+            wsData.push([]);
+            wsData.push([
+                "", "TOTAL", grandToktok, grandSukarela, grandTotal, "", ""
+            ]);
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             XLSX.utils.book_append_sheet(wb, ws, "Laporan Toktok");
@@ -77,8 +82,10 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }));
             ws['!cols'] = colWidths;
 
-            XLSX.writeFile(wb, "laporan_toktok.xlsx");
+            const today = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+            XLSX.writeFile(wb, `laporan_tok-tok-ripe_${today}.xlsx`);
         });
+
 
         // ===== PDF EXPORT =====
         document.getElementById("exportPDF").addEventListener("click", function() {
@@ -122,19 +129,25 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             ];
 
             let i = 1;
+            let grandToktok = 0;
+            let grandSukarela = 0;
+            let grandTotal = 0;
+
             data.forEach(row => {
                 const totalToktok = parseInt(row.total_toktok);
                 const totalSukarela = parseInt(row.total_sukarela);
                 const status = totalToktok >= toktokRipe ? "Lunas" : (totalToktok > 0 ? "Cicilan" : "Belum Bayar");
-                const linkCell = totalToktok > 0 ? {
-                    text: 'Detail Pembayaran',
-                    link: baseURL + row.anggota_id,
-                    color: 'blue',
-                    decoration: 'underline'
-                } : {
-                    text: '-',
-                    color: 'gray'
-                };
+                const linkCell = totalToktok > 0 ?
+                    {
+                        text: 'Detail Pembayaran',
+                        link: baseURL + row.anggota_id,
+                        color: 'blue',
+                        decoration: 'underline'
+                    } :
+                    {
+                        text: '-',
+                        color: 'gray'
+                    };
 
                 bodyData.push([{
                         text: i++,
@@ -162,12 +175,58 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         alignment: 'center'
                     }
                 ]);
+
+                grandToktok += toktokRipe;
+                grandSukarela += totalSukarela;
+                grandTotal += totalToktok;
             });
+
+            // Tambahkan baris total
+            bodyData.push([{
+                    text: '',
+                    border: [false, false, false, false]
+                },
+                {
+                    text: 'TOTAL',
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: grandToktok.toLocaleString('id-ID'),
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: grandSukarela.toLocaleString('id-ID'),
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: grandTotal.toLocaleString('id-ID'),
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: '',
+                    border: [false, false, false, false]
+                },
+                {
+                    text: '',
+                    border: [false, false, false, false]
+                }
+            ]);
 
             const docDefinition = {
                 content: [{
                         text: 'Laporan Toktok Ripe',
                         style: 'header'
+                    },
+                    {
+                        text: 'Tanggal: ' + new Date().toLocaleDateString('id-ID'),
+                        margin: [0, 0, 0, 10],
+                        alignment: 'right',
+                        italics: true,
+                        fontSize: 10
                     },
                     {
                         table: {
@@ -193,7 +252,8 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 pageSize: 'A4'
             };
 
-            pdfMake.createPdf(docDefinition).download('laporan_toktok.pdf');
+            const today = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+            pdfMake.createPdf(docDefinition).download(`laporan_tok-tok-ripe_${today}.pdf`);
         });
     </script>
 
