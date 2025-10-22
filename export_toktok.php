@@ -136,7 +136,20 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             data.forEach(row => {
                 const totalToktok = parseInt(row.total_toktok);
                 const totalSukarela = parseInt(row.total_sukarela);
-                const status = totalToktok >= toktokRipe ? "Lunas" : (totalToktok > 0 ? "Cicilan" : "Belum Bayar");
+
+                let status = "";
+                let warna = "black"; // default warna teks
+                if (totalToktok >= toktokRipe) {
+                    status = "Lunas";
+                    warna = "green";
+                } else if (totalToktok > 0) {
+                    status = "Cicilan";
+                    warna = "orange";
+                } else {
+                    status = "Belum Bayar";
+                    warna = "black";
+                }
+
                 const linkCell = totalToktok > 0 ?
                     {
                         text: 'Detail Pembayaran',
@@ -155,8 +168,9 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     },
                     {
                         text: row.nama,
-                        alignment: 'left'
-                    },
+                        alignment: 'left',
+                        color: warna
+                    }, // nama berwarna sesuai status
                     {
                         text: toktokRipe.toLocaleString('id-ID'),
                         alignment: 'center'
@@ -172,14 +186,16 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     linkCell,
                     {
                         text: status,
-                        alignment: 'center'
-                    }
+                        alignment: 'center',
+                        color: warna
+                    } // status berwarna juga
                 ]);
 
                 grandToktok += toktokRipe;
                 grandSukarela += totalSukarela;
                 grandTotal += totalToktok;
             });
+
 
             // Tambahkan baris total
             bodyData.push([{

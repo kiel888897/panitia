@@ -21,17 +21,22 @@ $stmt = $pdo->query("
         a.nama,
         a.hp,
         a.alamat,
-        SUM(oi.qty) AS total_qty,
-        (SUM(oi.qty) * 100000) AS total_pesanan,
+        COALESCE(SUM(oi.qty),0) AS total_qty,
+        (COALESCE(SUM(oi.qty),0) * 100000) AS total_pesanan,
         GROUP_CONCAT(CONCAT(oi.size, ' x', oi.qty) SEPARATOR ', ') AS pesanan,
-        COALESCE(SUM(bb.jumlah), 0) AS total_bayar
+        COALESCE(bb_tot.total_bayar, 0) AS total_bayar
     FROM anggota a
     JOIN order_items oi ON oi.order_id = a.id
-    LEFT JOIN bayar_baju bb ON bb.anggota_id = a.id
+    LEFT JOIN (
+        SELECT anggota_id, SUM(jumlah) AS total_bayar
+        FROM bayar_baju
+        GROUP BY anggota_id
+    ) bb_tot ON bb_tot.anggota_id = a.id
     GROUP BY a.id
     ORDER BY a.nama ASC
 ");
 $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 ?>
 
