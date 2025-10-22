@@ -1,4 +1,5 @@
 <?php
+$menu = 'index';
 session_start();
 require_once 'db.php';
 
