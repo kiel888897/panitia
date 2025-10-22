@@ -1,41 +1,42 @@
 <?php
 require_once 'db.php';
 
-// Pastikan ada ID anggota
-if (!isset($_GET['id'])) {
-    header('Location: baju.php');
+// Pastikan ada ID silua
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    echo "<script>alert('ID silua tidak ditemukan'); window.location='silua.php';</script>";
     exit;
 }
 
-$anggota_id = (int) $_GET['id'];
-$totalQty = isset($_GET['qty']) ? (int) $_GET['qty'] : 0;
-$targetBaju = $totalQty * 100000; // harga satuan baju = 100rb
+$silua_id = (int) $_GET['id'];
 
-// Ambil data anggota
-$stmt = $pdo->prepare("SELECT * FROM anggota WHERE id = ?");
-$stmt->execute([$anggota_id]);
-$anggota = $stmt->fetch(PDO::FETCH_ASSOC);
+// Ambil data silua
+$stmt = $pdo->prepare("SELECT * FROM silua WHERE id = ? LIMIT 1");
+$stmt->execute([$silua_id]);
+$silua = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$anggota) {
-    echo "<script>alert('Data anggota tidak ditemukan'); window.location='baju.php';</script>";
+if (!$silua) {
+    echo "<script>alert('Data silua tidak ditemukan'); window.location='silua.php';</script>";
     exit;
 }
 
-// Ambil data pembayaran anggota ini
+// Ambil data pembayaran untuk silua ini
 $stmt = $pdo->prepare("
     SELECT id, jumlah, tanggal, bukti
-    FROM bayar_baju
-    WHERE anggota_id = ?
-    ORDER BY tanggal DESC
+    FROM bayar_silua
+    WHERE silua_id = ?
+    ORDER BY tanggal DESC, id DESC
 ");
-$stmt->execute([$anggota_id]);
+$stmt->execute([$silua_id]);
 $pembayaran = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Hitung total pembayaran
 $totalBayar = array_sum(array_column($pembayaran, 'jumlah'));
 
+// Target dari kolom jumlah di tabel silua (jika ada)
+$target = (float) ($silua['jumlah'] ?? 0);
+
 // Tentukan status
-if ($totalBayar >= $targetBaju && $targetBaju > 0) {
+if ($target > 0 && $totalBayar >= $target) {
     $status = 'Lunas';
     $statusClass = 'success';
 } elseif ($totalBayar > 0) {
@@ -45,6 +46,7 @@ if ($totalBayar >= $targetBaju && $targetBaju > 0) {
     $status = 'Belum Bayar';
     $statusClass = 'secondary';
 }
+$sisaBayar = max(0, $target - $totalBayar);
 ?>
 <!doctype html>
 <html lang="id">
@@ -70,7 +72,7 @@ if ($totalBayar >= $targetBaju && $targetBaju > 0) {
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-sm-12">
-                            <h3 class="mb-0">Detail Pembayaran Baju: <?= htmlspecialchars($anggota['nama']) ?></h3>
+                            <h3 class="mb-0">Detail Pembayaran Silua: <?= htmlspecialchars($silua['nama'] ?? '') ?></h3>
                         </div>
                     </div>
                 </div>
@@ -80,15 +82,30 @@ if ($totalBayar >= $targetBaju && $targetBaju > 0) {
                 <div class="container-fluid">
                     <div class="card">
                         <div class="card-header bg-light">
-                            <h5 class="mb-0">Informasi Anggota</h5>
+                            <h5 class="mb-0">Informasi Silua</h5>
                         </div>
                         <div class="card-body">
-                            <p><strong>Nama:</strong> <?= htmlspecialchars($anggota['nama']) ?></p>
+                            <p><strong>Nama:</strong> <?= htmlspecialchars($silua['nama'] ?? '-') ?></p>
+                            <?php if (!empty($silua['keterangan'])): ?>
+                                <p><strong>Keterangan:</strong> <?php
+                                                                $jabatan = strtolower($silua['keterangan']); // pastikan huruf kecil semua dulu
+                                                                if ($jabatan === 'hula') {
+                                                                    echo 'Hula-Hula';
+                                                                } elseif ($jabatan === 'bere') {
+                                                                    echo 'Bere & Ibebere';
+                                                                } else {
+                                                                    echo ucfirst($jabatan); // default: misal Boru
+                                                                }
+                                                                ?>
+                                </p>
+                            <?php endif; ?>
                             <p><strong>Status:</strong>
                                 <span class="badge bg-<?= $statusClass ?>"><?= $status ?></span>
                             </p>
-                            <p><strong>Total Pesanan:</strong> Rp <?= number_format($targetBaju, 0, ',', '.') ?></p>
+                            <p><strong>Total Tagihan:</strong> Rp <?= number_format($target, 0, ',', '.') ?></p>
                             <p><strong>Total Pembayaran:</strong> Rp <?= number_format($totalBayar, 0, ',', '.') ?></p>
+                            <p><strong>Sisa Pembayaran:</strong> Rp <?= number_format($sisaBayar, 0, ',', '.') ?></p>
+
                         </div>
                     </div>
 
@@ -115,13 +132,15 @@ if ($totalBayar >= $targetBaju && $targetBaju > 0) {
                                         foreach ($pembayaran as $row): ?>
                                             <tr>
                                                 <td><?= $i++ ?></td>
-                                                <td><?= htmlspecialchars(date('d-m-Y', strtotime($row['tanggal']))) ?></td>
+                                                <td><?= htmlspecialchars(date('d-m-Y', strtotime($row['tanggal'] ?? ''))) ?></td>
                                                 <td>Rp <?= number_format($row['jumlah'], 0, ',', '.') ?></td>
                                                 <td>
-                                                    <?php if (!empty($row['bukti'])): ?>
+                                                    <?php if (!empty($row['bukti']) && file_exists(__DIR__ . '/uploads/' . $row['bukti'])): ?>
                                                         <a href="uploads/<?= htmlspecialchars($row['bukti']) ?>" target="_blank" class="text-primary">
                                                             <i class="bi bi-image"></i> Lihat
                                                         </a>
+                                                    <?php elseif (!empty($row['bukti'])): ?>
+                                                        <?= htmlspecialchars($row['bukti']) ?>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>

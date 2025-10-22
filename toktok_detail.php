@@ -53,7 +53,7 @@ if ($totalToktok >= $targetToktok) {
 
 <head>
     <meta charset="utf-8">
-    <title>Detail Iuran Toktok Ripe | Panitia Bona Taon PTS</title>
+    <title>Detail Tok-tok Ripe | Panitia Bona Taon PTS</title>
 
 
     <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
@@ -96,8 +96,8 @@ if ($totalToktok >= $targetToktok) {
                                 ?>
                             </p>
                             <p><strong>Status:</strong> <span class="badge bg-<?= $statusClass ?>"><?= $status ?></span></p>
-                            <p><strong>Total Toktok:</strong> Rp <?= number_format($totalToktok, 0, ',', '.') ?> / Rp <?= number_format($targetToktok, 0, ',', '.') ?></p>
-                            <p><strong>Total Sukarela:</strong> Rp <?= number_format($totalSukarela, 0, ',', '.') ?></p>
+                            <p><strong>Tok-tok Ripe:</strong> Rp <?= number_format($totalToktok, 0, ',', '.') ?> / Rp <?= number_format($targetToktok, 0, ',', '.') ?></p>
+                            <p><strong>Sukarela:</strong> Rp <?= number_format($totalSukarela, 0, ',', '.') ?></p>
                         </div>
                     </div>
 
