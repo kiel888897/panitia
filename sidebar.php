@@ -80,7 +80,7 @@
                         </ul>
                     </li>
                 <?php } ?>
-                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2 || $_SESSION['role_id'] == 4) { ?>
                     <li class="nav-item has-treeview  <?php if ($menu === 'baju' || $menu === 'baju-proses') echo 'menu-open'; ?>">
                         <a href="#" class="nav-link <?php if ($menu === 'baju' || $menu === 'baju-proses') echo 'active'; ?>">
                             <i class="nav-icon bi bi-person-badge"></i>
