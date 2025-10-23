@@ -142,7 +142,7 @@ $sisaBayar = max(0, $target - $totalBayar);
                                                     <?php elseif (!empty($row['bukti'])): ?>
                                                         <?= htmlspecialchars($row['bukti']) ?>
                                                     <?php else: ?>
-                                                        <span class="text-muted">-</span>
+                                                        <span class="text-muted">Cash</span>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>

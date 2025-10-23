@@ -131,7 +131,7 @@ $sisaPembayaran = max($targetBaju - $totalBayar, 0);
                                                             <i class="bi bi-image"></i> Lihat
                                                         </a>
                                                     <?php else: ?>
-                                                        <span class="text-muted">-</span>
+                                                        <span class="text-muted">Cash</span>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>

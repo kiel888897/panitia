@@ -134,7 +134,7 @@ if ($totalToktok >= $targetToktok) {
                                                     <?php if (!empty($row['bukti'])): ?>
                                                         <a href="uploads/<?= htmlspecialchars($row['bukti']) ?>" target="_blank" class="text-primary"><i class="bi bi-image"></i> Lihat</a>
                                                     <?php else: ?>
-                                                        <span class="text-muted">-</span>
+                                                        <span class="text-muted">Cash</span>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>
