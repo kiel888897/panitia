@@ -230,7 +230,7 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link <?php if ($menu === 'lapkupon') echo 'active'; ?>">
+                                    <a href="laporan_kupon.php" class="nav-link <?php if ($menu === 'lapkupon') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Kupon bajar PTS</p>
                                     </a>
