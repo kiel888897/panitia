@@ -242,7 +242,7 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link <?php if ($menu === 'lapsilua') echo 'active'; ?>">
+                                    <a href="laporan-silua.php" class="nav-link <?php if ($menu === 'lapsilua') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Silua</p>
                                     </a>
