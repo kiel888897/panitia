@@ -16,7 +16,28 @@ $stmt = $pdo->query("
     GROUP BY k.id, k.nama, k.nomor_kupon, k.jumlah, k.kembali
     ORDER BY k.nama ASC
 ");
-$data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Siapkan base URL untuk detail link
+$hostBase = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+    . '://' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/';
+
+// Siapkan data yang dikirim ke JS, tambahkan detail_url bila ada pembayaran (>0)
+$data = [];
+foreach ($rows as $r) {
+    $total_bayar = (int)$r['total_bayar'];
+    $detail_url = $total_bayar > 0 ? $hostBase . 'kupon_detail.php?id=' . $r['id_kupon'] : null;
+    $data[] = [
+        'id_kupon' => $r['id_kupon'],
+        'nama' => $r['nama'],
+        'nomor_kupon' => $r['nomor_kupon'],
+        'jumlah_kupon' => (int)$r['jumlah_kupon'],
+        'kembali_kupon' => (int)$r['kembali_kupon'],
+        'total_tagihan' => (int)$r['total_tagihan'],
+        'total_bayar' => (int)$r['total_bayar'],
+        'detail_url' => $detail_url
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -73,7 +94,8 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 wsData.push(["Laporan Kupon Bajar PTS"]);
                 wsData.push(["Tanggal:", new Date().toLocaleDateString('id-ID')]);
                 wsData.push([]);
-                wsData.push(["No", "Nama", "Nomor Kupon", "Jumlah", "Kembali", "Total Tagihan (Rp)", "Total Bayar (Rp)", "Status"]);
+                // Header termasuk kolom Keterangan (link detail)
+                wsData.push(["No", "Nama", "Nomor Kupon", "Jumlah", "Kembali", "Total Tagihan (Rp)", "Total Bayar (Rp)", "Keterangan", "Status"]);
 
                 let i = 1,
                     totalJumlah = 0,
@@ -91,6 +113,9 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     if (bayar >= tagihan && tagihan > 0) status = "Lunas";
                     else if (bayar > 0) status = "Cicilan";
 
+                    // gunakan URL lengkap untuk Excel jika tersedia, jika tidak '-'
+                    const ket = row.detail_url ? row.detail_url : "-";
+
                     wsData.push([
                         i++,
                         row.nama,
@@ -99,6 +124,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         kembali,
                         tagihan,
                         bayar,
+                        ket,
                         status
                     ]);
 
@@ -109,7 +135,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 });
 
                 wsData.push([]);
-                wsData.push(["", "TOTAL", "", totalJumlah, totalKembali, totalTagihan, totalBayar, ""]);
+                wsData.push(["", "TOTAL", "", totalJumlah, totalKembali, totalTagihan, totalBayar, "", ""]);
 
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
                 ws['!cols'] = wsData[3].map((_, i) => ({
@@ -164,6 +190,11 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         alignment: 'center'
                     },
                     {
+                        text: 'Keterangan',
+                        bold: true,
+                        alignment: 'center'
+                    },
+                    {
                         text: 'Status',
                         bold: true,
                         alignment: 'center'
@@ -192,6 +223,20 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     status = "Cicilan";
                     warna = "orange";
                 }
+
+                // Keterangan: jika detail_url ada -> tampilkan link "Lihat Detail" (target blank)
+                const ketCell = row.detail_url ? {
+                    text: 'Lihat Detail',
+                    link: row.detail_url,
+                    target: '_blank',
+                    color: 'blue',
+                    decoration: 'underline',
+                    alignment: 'center'
+                } : {
+                    text: '-',
+                    alignment: 'center',
+                    color: 'gray'
+                };
 
                 bodyData.push([{
                         text: i++,
@@ -222,6 +267,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         text: 'Rp ' + bayar.toLocaleString('id-ID'),
                         alignment: 'center'
                     },
+                    ketCell,
                     {
                         text: status,
                         alignment: 'center',
@@ -268,6 +314,10 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 {
                     text: '',
                     colSpan: 1
+                },
+                {
+                    text: '',
+                    colSpan: 1
                 }
             ]);
 
@@ -286,7 +336,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     {
                         table: {
                             headerRows: 1,
-                            widths: ['5%', '20%', '15%', '10%', '10%', '15%', '15%', '10%'],
+                            widths: ['5%', '20%', '15%', '8%', '8%', '12%', '12%', '15%', '10%'],
                             body: bodyData
                         },
                         layout: 'lightHorizontalLines'

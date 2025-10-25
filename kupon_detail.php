@@ -39,7 +39,7 @@ $totalTagihan = $jumlahKuponAktif * $hargaPerKupon;
 $sisaPembayaran = $totalTagihan - $totalBayar;
 
 // Tentukan status pembayaran
-$statusPembayaran = ($sisaPembayaran <= 0) ? 'Lunas' : 'Belum Lunas';
+$statusPembayaran = ($sisaPembayaran <= 0) ? 'Lunas' : 'Cicilan';
 $statusClass = ($sisaPembayaran <= 0) ? 'text-success' : 'text-danger';
 
 ?>

@@ -236,7 +236,7 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link <?php if ($menu === 'lapsumbangan') echo 'active'; ?>">
+                                    <a href="laporan-sumbangan-dana.php" class="nav-link <?php if ($menu === 'lapsumbangan') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Sumbangan Dana (proposal)</p>
                                     </a>
