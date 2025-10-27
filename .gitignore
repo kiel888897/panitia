@@ -1,3 +1,5 @@
 db.php
 .htaccess
 config.php
+uploads/
+logs/
