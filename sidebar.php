@@ -139,11 +139,19 @@
                     <li class="nav-item">
                         <a href="sumbangan.php" class="nav-link">
                             <i class="nav-icon bi bi-gift-fill"></i>
-                            <p>Sumbangan</p>
+                            <p>Sumbangan & Tor-tor</p>
                         </a>
                     </li>
-
                 <?php } ?>
+
+                <!-- <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+                    <li class="nav-item">
+                        <a href="tortor.php" class="nav-link">
+                            <i class="nav-icon bi bi-gift-fill"></i>
+                            <p>Tor-Tor</p>
+                        </a>
+                    </li>
+                <?php } ?> -->
                 <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
                     <li class="nav-item has-treeview  <?php if ($menu === 'silua' || $menu === 'silua-proses') echo 'menu-open'; ?>">
                         <a href="#" class="nav-link <?php if ($menu === 'silua' || $menu === 'silua-proses') echo 'active'; ?>">
@@ -242,13 +250,19 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
+                                    <a href="laporan-tor-tor.php" class="nav-link <?php if ($menu === 'laptor') echo 'active'; ?>">
+                                        <i class="bi bi-circle"></i>
+                                        <p>Tor-tor</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a href="laporan-silua.php" class="nav-link <?php if ($menu === 'lapsilua') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Silua</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link <?php if ($menu === 'lappemasukan') echo 'active'; ?>">
+                                    <a href="laporan-pemasukan.php" class="nav-link <?php if ($menu === 'lappemasukan') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Semua Pemasukan</p>
                                     </a>

@@ -23,7 +23,20 @@ if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $stmt = $pdo->prepare("SELECT * FROM sumbangan WHERE id = ?");
+    $stmt->execute([$id]);
+    $sumbangan = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    if (!$sumbangan) {
+        header('Location: sumbangan.php');
+        exit;
+    }
+} else {
+    header('Location: sumbangan.php');
+    exit;
+}
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -33,44 +46,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $jumlah       = trim($_POST['jumlah'] ?? '');
     $keterangan   = trim($_POST['description'] ?? '');
     $tanggal      = trim($_POST['tanggal'] ?? '');
-    $bukti          = '';
-
-    // Upload bukti jika ada
+    $bukti_lama     = $_POST['bukti_lama'] ?? ($sumbangan['photo'] ?? '');
+    $bukti          = $bukti_lama;
+    // jika ada upload bukti baru
     if (!empty($_FILES['bukti']['name'])) {
         $targetDir = "uploads/";
         if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
 
-        // Ambil ekstensi file
+        // ambil ekstensi dan slug nama anggota
         $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
-        $namaAnggotaSlug = slugify($nama); // use slugify function for safe filename
-
-        // Format nama file: sumbangan-nama-tanggal.ext
+        $slugNama = slugify($nama);
         $tanggalFile = date('Ymd', strtotime($tanggal));
-        $filename = "sumbangan-" . $namaAnggotaSlug . "-" . $tanggalFile . "." . $ext;
+        $filename = "sumbangan-{$slugNama}-{$tanggalFile}." . $ext;
         $targetFile = $targetDir . $filename;
+
+        // jika file dengan nama sama sudah ada, tambahkan suffix unik
+        $counter = 1;
+        $base = pathinfo($filename, PATHINFO_FILENAME);
+        while (file_exists($targetFile)) {
+            $filename = "{$base}-{$counter}." . $ext;
+            $targetFile = $targetDir . $filename;
+            $counter++;
+        }
+
+        // hapus file lama jika ada dan bukan kosong
+        if (!empty($bukti_lama) && file_exists($targetDir . $bukti_lama)) {
+            @unlink($targetDir . $bukti_lama);
+        }
 
         if (move_uploaded_file($_FILES["bukti"]["tmp_name"], $targetFile)) {
             $bukti = $filename;
         } else {
-            $error = "Gagal upload bukti pembayaran.";
+            $error = "Gagal mengunggah bukti pembayaran.";
         }
     }
-
     // Validasi input minimal yang diperlukan
     if ($nama && $jenis && $tanggal) {
         try {
-            $stmt = $pdo->prepare("
-                INSERT INTO sumbangan 
-                (nama, photo, jenis, jumlah, keterangan, tanggal)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ");
+
+
+            $stmt = $pdo->prepare("UPDATE sumbangan SET nama = ?, photo = ?, jenis = ?, jumlah = ?, keterangan = ?, tanggal = ? WHERE id = ?");
             $stmt->execute([
                 $nama,
                 $bukti,
                 $jenis,
                 $jumlah,
                 $keterangan,
-                $tanggal
+                $tanggal,
+                $id
             ]);
 
             header('Location: sumbangan.php');
@@ -160,13 +183,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Sumbangan & Tor-tor</h3>
+                            <h3 class="mb-0">Edit Sumbangan</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
                                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
                                 <li class="breadcrumb-item"><a href="sumbangan.php">Sumbangan</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Add Sumbangan</li>
+                                <li class="breadcrumb-item active" aria-current="page">Edit Sumbangan</li>
                             </ol>
                         </div>
                     </div>
@@ -186,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Sumbangan & Tor-tor Information</div>
+                                    <div class="card-title">Sumbangan Information</div>
                                 </div>
                                 <!--end::Header-->
 
@@ -200,25 +223,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <div class="mb-3">
                                             <label for="tanggal" class="form-label">Tanggal</label>
                                             <input
-                                                type="date" class="form-control" name="tanggal" id="tanggal" aria-describedby="tanggal" required />
+                                                type="date" class="form-control" name="tanggal" id="tanggal" aria-describedby="tanggal" value="<?= htmlspecialchars($sumbangan['tanggal']) ?>" required />
                                         </div>
                                         <div class="mb-3">
                                             <label for="nama" class="form-label">Nama</label>
                                             <input
-                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" required />
+                                                type="text" class="form-control" name="nama" id="nama" aria-describedby="nama" value="<?= htmlspecialchars($sumbangan['nama']) ?>" required />
                                         </div>
                                         <div class="mb-3">
                                             <label for="jenis" class="form-label">Jenis</label>
                                             <select class="form-select" name="jenis" id="jenis" required>
                                                 <option selected disabled value="">Choose ...</option>
-                                                <option value="dana">Dana</option>
-                                                <option value="produk">Produk</option>
-                                                <option value="tor-tor">Tor-tor</option>
+                                                <option value="dana" <?= ($sumbangan['jenis'] === 'dana') ? 'selected' : '' ?>>Dana</option>
+                                                <option value="produk" <?= ($sumbangan['jenis'] === 'produk') ? 'selected' : '' ?>>Produk</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a valid jenis Type.</div>
                                         </div>
 
-                                        <div class="mb-3" id="jumlahContainer" style="display: none;">
+                                        <div class="mb-3" id="jumlahContainer">
                                             <label for="jumlah" class="form-label">Jumlah</label>
                                             <input
                                                 type="text"
@@ -226,19 +248,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 name="jumlah"
                                                 id="jumlah"
                                                 aria-describedby="jumlah"
-                                                placeholder="Masukkan jumlah (Rp)" />
+                                                placeholder="Masukkan jumlah (Rp)" value="<?= htmlspecialchars($sumbangan['jumlah']) ?>" />
                                         </div>
 
 
 
                                         <div class="mb-3">
                                             <label for="description" class="form-label">Keterangan</label>
-                                            <textarea class="form-control" name="description" id="description" aria-label="description"></textarea>
+                                            <textarea class="form-control" name="description" id="description" aria-label="description"><?= htmlspecialchars($sumbangan['keterangan']) ?></textarea>
                                         </div>
 
                                         <div class="mb-3">
                                             <label class="form-label">Upload (opsional)</label>
                                             <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                                            <?php if (!empty($sumbangan['photo'])): ?>
+                                                <p class="mt-2">File saat ini:
+                                                    <a href="uploads/<?= htmlspecialchars($sumbangan['photo']) ?>" target="_blank"><?= htmlspecialchars($sumbangan['photo']) ?></a>
+                                                </p>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <!--end::Body-->
@@ -390,11 +417,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const jumlahContainer = document.getElementById("jumlahContainer");
 
             jenisSelect.addEventListener("change", function() {
-                if (this.value === "dana" || this.value === "tor-tor") {
+                if (this.value === "dana") {
                     jumlahContainer.style.display = "block";
                 } else {
                     jumlahContainer.style.display = "none";
-                    document.getElementById("jumlah").value = ""; // kosongkan jika bukan produk
+                    document.getElementById("jumlah").value = ""; // kosongkan jika bukan dana
                 }
             });
         });

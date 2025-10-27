@@ -183,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Edit Sumbangan</h3>
+                            <h3 class="mb-0">Edit Sumbangan & Tor-tor</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
@@ -209,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Sumbangan Information</div>
+                                    <div class="card-title">Sumbangan & Tor-tor Information</div>
                                 </div>
                                 <!--end::Header-->
 
@@ -236,6 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <option selected disabled value="">Choose ...</option>
                                                 <option value="dana" <?= ($sumbangan['jenis'] === 'dana') ? 'selected' : '' ?>>Dana</option>
                                                 <option value="produk" <?= ($sumbangan['jenis'] === 'produk') ? 'selected' : '' ?>>Produk</option>
+                                                <option value="tor-tor" <?= ($sumbangan['jenis'] === 'tor-tor') ? 'selected' : '' ?>>Tor-tor</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a valid jenis Type.</div>
                                         </div>
@@ -254,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                                         <div class="mb-3">
-                                            <label for="description" class="form-label">Keterangan</label>
+                                            <label for="description" class="form-label">Keterangan (opsional)</label>
                                             <textarea class="form-control" name="description" id="description" aria-label="description"><?= htmlspecialchars($sumbangan['keterangan']) ?></textarea>
                                         </div>
 
@@ -417,7 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const jumlahContainer = document.getElementById("jumlahContainer");
 
             jenisSelect.addEventListener("change", function() {
-                if (this.value === "dana") {
+                if (this.value === "dana" || this.value === "tor-tor") {
                     jumlahContainer.style.display = "block";
                 } else {
                     jumlahContainer.style.display = "none";

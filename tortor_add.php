@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Add New Sumbangan & Tor-tor</h3>
+                            <h3 class="mb-0">Add New Sumbangan</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
@@ -186,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="card card-primary card-outline mb-4">
                                 <!--begin::Header-->
                                 <div class="card-header">
-                                    <div class="card-title">Sumbangan & Tor-tor Information</div>
+                                    <div class="card-title">Sumbangan Information</div>
                                 </div>
                                 <!--end::Header-->
 
@@ -213,7 +213,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <option selected disabled value="">Choose ...</option>
                                                 <option value="dana">Dana</option>
                                                 <option value="produk">Produk</option>
-                                                <option value="tor-tor">Tor-tor</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a valid jenis Type.</div>
                                         </div>
@@ -390,11 +389,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const jumlahContainer = document.getElementById("jumlahContainer");
 
             jenisSelect.addEventListener("change", function() {
-                if (this.value === "dana" || this.value === "tor-tor") {
+                if (this.value === "dana") {
                     jumlahContainer.style.display = "block";
                 } else {
                     jumlahContainer.style.display = "none";
-                    document.getElementById("jumlah").value = ""; // kosongkan jika bukan produk
+                    document.getElementById("jumlah").value = ""; // kosongkan jika bukan dana
                 }
             });
         });

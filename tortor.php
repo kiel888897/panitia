@@ -85,7 +85,7 @@ $sumbangans = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <!--begin::Row-->
                     <div class="row">
                         <div class="col-sm-6">
-                            <h3 class="mb-0">Sumbangan & Tor-tor</h3>
+                            <h3 class="mb-0">Sumbangan</h3>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-end">
@@ -110,7 +110,7 @@ $sumbangans = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="card">
 
                                 <div class="card-body">
-                                    <a href="sumbangan_add.php" class="btn btn-success">Tambah</a>
+                                    <a href="sumbangan_add.php" class="btn btn-success">Add New Sumbangan</a>
 
                                     <table class="table table-bordered" id="eventTable">
                                         <thead>
