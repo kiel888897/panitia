@@ -89,9 +89,8 @@ if (!isset($_SESSION['admin_id'])) {
                             <button type="button" class="btn btn-outline-info mb-3" data-bs-toggle="modal" data-bs-target="#exportModal">
                                 <i class="bi bi-download"></i> Export Data
                             </button>
-
                             <?php
-                            // --- TOKTOK & SUKARELA ---
+                            // === 1. TOKTOK & SUKARELA ===
                             $stmt = $pdo->query("
     SELECT 
         COALESCE(SUM(i.toktok), 0) AS total_toktok,
@@ -102,7 +101,7 @@ if (!isset($_SESSION['admin_id'])) {
 ");
                             $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                            $jumlahAnggota = $data['jumlah_anggota'];
+                            $jumlahAnggota = (int)$data['jumlah_anggota'];
                             $totalToktok = (int)$data['total_toktok'];
                             $totalSukarela = (int)$data['total_sukarela'];
 
@@ -111,28 +110,85 @@ if (!isset($_SESSION['admin_id'])) {
                             $piutangToktok = $jumlahToktok - $totalToktok;
 
 
-                            // --- BAJU PTS ---
+                            // === 2. BAJU PTS ===
                             $stmt2 = $pdo->query("
     SELECT 
-        COALESCE(SUM(oi.qty),0) AS total_qty,
-        (COALESCE(SUM(oi.qty),0) * 100000) AS total_pesanan,
-        COALESCE(SUM(bb_tot.total_bayar), 0) AS total_bayar
-    FROM anggota a
-    JOIN order_items oi ON oi.order_id = a.id
-    LEFT JOIN (
-        SELECT anggota_id, SUM(jumlah) AS total_bayar
-        FROM bayar_baju
-        GROUP BY anggota_id
-    ) bb_tot ON bb_tot.anggota_id = a.id
+        COALESCE(SUM(oi.total_qty), 0) AS total_qty,
+        COALESCE(SUM(oi.total_qty), 0) * 100000 AS total_pesanan,
+        COALESCE(SUM(bb.total_bayar), 0) AS total_bayar
+    FROM
+        (SELECT order_id, SUM(qty) AS total_qty
+         FROM order_items
+         GROUP BY order_id) oi
+    LEFT JOIN
+        (SELECT anggota_id, SUM(jumlah) AS total_bayar
+         FROM bayar_baju
+         GROUP BY anggota_id) bb
+      ON oi.order_id = bb.anggota_id
 ");
                             $baju = $stmt2->fetch(PDO::FETCH_ASSOC);
 
                             $totalPesanan = (int)$baju['total_pesanan'];
-                            $totalBayar = (int)$baju['total_bayar'];
-                            $piutangBaju = $totalPesanan - $totalBayar;
+                            $totalBayarBaju = (int)$baju['total_bayar'];
+                            $piutangBaju = $totalPesanan - $totalBayarBaju;
 
 
-                            // --- OUTPUT TABEL RINGKASAN ---
+                            // === 3. KUPON PTS ===
+                            $stmt3 = $pdo->query("
+    SELECT 
+        COALESCE(SUM((k.jumlah - k.kembali) * 50000), 0) AS total_tagihan,
+        COALESCE(SUM(bk.bayar), 0) AS total_bayar
+    FROM kupon k
+    LEFT JOIN bayar_kupon bk ON k.id = bk.id_kupon
+");
+                            $kupon = $stmt3->fetch(PDO::FETCH_ASSOC);
+
+                            $totalTagihanKupon = (int)$kupon['total_tagihan'];
+                            $totalBayarKupon = (int)$kupon['total_bayar'];
+                            $piutangKupon = $totalTagihanKupon - $totalBayarKupon;
+
+
+                            // === 4. SILUA PER KELOMPOK ===
+                            $stmt4 = $pdo->query("
+    SELECT 
+        LOWER(TRIM(a.keterangan)) AS kategori,
+        COALESCE(SUM(a.jumlah), 0) AS total_silua,
+        COALESCE(SUM(b.jumlah), 0) AS total_bayar
+    FROM silua a
+    LEFT JOIN bayar_silua b ON a.id = b.silua_id
+    GROUP BY LOWER(TRIM(a.keterangan))
+");
+                            $siluaData = $stmt4->fetchAll(PDO::FETCH_ASSOC);
+
+                            $categories = [
+                                'hula' => ['label' => 'Silua Hula-hula', 'total_silua' => 0, 'total_bayar' => 0],
+                                'boru' => ['label' => 'Silua Boru', 'total_silua' => 0, 'total_bayar' => 0],
+                                'bere' => ['label' => 'Silua Bere & Ibebere', 'total_silua' => 0, 'total_bayar' => 0],
+                            ];
+
+                            foreach ($siluaData as $r) {
+                                $key = strtolower(trim($r['kategori']));
+                                if (isset($categories[$key])) {
+                                    $categories[$key]['total_silua'] = (int)$r['total_silua'];
+                                    $categories[$key]['total_bayar'] = (int)$r['total_bayar'];
+                                }
+                            }
+
+
+                            // === 5. SUMBANGAN (Dana & Tor-tor) ===
+                            $stmt5 = $pdo->query("
+    SELECT 
+        jenis,
+        nama,
+        COALESCE(jumlah, 0) AS jumlah
+    FROM sumbangan
+    WHERE jenis IN ('dana', 'tor-tor')
+    ORDER BY jenis, tanggal DESC
+");
+                            $sumbangan = $stmt5->fetchAll(PDO::FETCH_ASSOC);
+
+
+                            // === 6. OUTPUT RINGKASAN SEMUA ===
                             echo "<table class='table table-bordered table-sm align-middle'>
 <thead class='table-secondary text-center'>
 <tr>
@@ -146,7 +202,7 @@ if (!isset($_SESSION['admin_id'])) {
 <tbody>
 <tr>
   <td class='text-center'>1</td>
-  <td>Toktok Ripe ({$jumlahAnggota} orang)</td>
+  <td>Toktok Ripe ({$jumlahAnggota} KK)</td>
   <td class='text-end'>" . number_format($jumlahToktok, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($totalToktok, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($piutangToktok, 0, ',', '.') . "</td>
@@ -162,12 +218,74 @@ if (!isset($_SESSION['admin_id'])) {
   <td class='text-center'>3</td>
   <td>Baju PTS</td>
   <td class='text-end'>" . number_format($totalPesanan, 0, ',', '.') . "</td>
-  <td class='text-end'>" . number_format($totalBayar, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalBayarBaju, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($piutangBaju, 0, ',', '.') . "</td>
+</tr>
+<tr>
+  <td class='text-center'>4</td>
+  <td>Kupon Bajar KFC PTS</td>
+  <td class='text-end'>" . number_format($totalTagihanKupon, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalBayarKupon, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($piutangKupon, 0, ',', '.') . "</td>
+</tr>";
+
+                            $no = 5;
+                            $grandSilua = 0;
+                            $grandBayarSilua = 0;
+
+                            foreach ($categories as $v) {
+                                $piutang = $v['total_silua'] - $v['total_bayar'];
+                                echo "
+<tr>
+  <td class='text-center'>{$no}</td>
+  <td>{$v['label']}</td>
+  <td class='text-end'>" . number_format($v['total_silua'], 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($v['total_bayar'], 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($piutang, 0, ',', '.') . "</td>
+</tr>";
+                                $no++;
+                                $grandSilua += $v['total_silua'];
+                                $grandBayarSilua += $v['total_bayar'];
+                            }
+
+                            // === Tambahkan baris sumbangan dinamis ===
+                            $totalJumlahSumbangan = 0;
+                            if (!empty($sumbangan)) {
+                                foreach ($sumbangan as $row) {
+                                    $jenis = ucfirst($row['jenis']);
+                                    $nama = htmlspecialchars($row['nama']);
+                                    $jumlah = (int)$row['jumlah'];
+                                    $totalJumlahSumbangan += $jumlah;
+
+                                    echo "
+<tr>
+  <td class='text-center'>{$no}</td>
+  <td>{$jenis} ({$nama})</td>
+  <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
+  <td class='text-end'>0</td>
+</tr>";
+                                    $no++;
+                                }
+                            }
+
+                            // === TOTAL KESELURUHAN ===
+                            $totalJumlah = $jumlahToktok + $totalSukarela + $totalPesanan + $totalTagihanKupon + $grandSilua + $totalJumlahSumbangan;
+                            $totalBayar = $totalToktok + $totalSukarela + $totalBayarBaju + $totalBayarKupon + $grandBayarSilua + $totalJumlahSumbangan;
+                            $totalPiutang = $totalJumlah - $totalBayar;
+
+                            echo "
+<tr class='table-light fw-bold'>
+  <td colspan='2' class='text-center'>TOTAL KESELURUHAN</td>
+  <td class='text-end'>" . number_format($totalJumlah, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalBayar, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalPiutang, 0, ',', '.') . "</td>
 </tr>
 </tbody>
 </table>";
                             ?>
+
+
 
                         </div>
                     </div>

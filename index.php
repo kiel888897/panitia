@@ -8,12 +8,67 @@ if (!isset($_SESSION['admin_id'])) {
   header('Location: login.php');
   exit;
 }
+
+// // === Query masing-masing sumber pemasukan ===
+
+// // 1. Toktok + Sukarela
+// $stmt1 = $pdo->query("SELECT IFNULL(SUM(toktok + sukarela), 0) AS total FROM iuran");
+// $iuran = (float)$stmt1->fetchColumn();
+
+// // 2. Sumbangan Dana
+// $stmt2 = $pdo->query("SELECT IFNULL(SUM(jumlah), 0) AS total FROM sumbangan WHERE jenis = 'dana'");
+// $dana = (float)$stmt2->fetchColumn();
+
+// // 3. Sumbangan Tor-tor
+// $stmt3 = $pdo->query("SELECT IFNULL(SUM(jumlah), 0) AS total FROM sumbangan WHERE jenis = 'tor-tor'");
+// $tortor = (float)$stmt3->fetchColumn();
+
+// // 4. Bayar Kupon
+// $stmt4 = $pdo->query("SELECT IFNULL(SUM(bayar), 0) AS total FROM bayar_kupon");
+// $kupon = (float)$stmt4->fetchColumn();
+
+// // 5. Bayar Baju
+// $stmt5 = $pdo->query("SELECT IFNULL(SUM(jumlah), 0) AS total FROM bayar_baju");
+// $baju = (float)$stmt5->fetchColumn();
+
+// // 6. Bayar Silua
+// $stmt6 = $pdo->query("SELECT IFNULL(SUM(jumlah), 0) AS total FROM bayar_silua");
+// $silua = (float)$stmt6->fetchColumn();
+
+// // === Hitung total keseluruhan ===
+// $total_pemasukan = $iuran + $dana + $tortor + $kupon + $baju + $silua;
+
+// // === Tampilkan dalam tabel HTML ===
+// echo "
+// <table class='table table-bordered table-sm align-middle'>
+// <thead class='table-secondary text-center'>
+// <tr>
+//   <th>#</th>
+//   <th>Sumber Pemasukan</th>
+//   <th>Jumlah (Rp)</th>
+// </tr>
+// </thead>
+// <tbody>
+// <tr><td class='text-center'>1</td><td>Iuran (Toktok + Sukarela)</td><td class='text-end'>" . number_format($iuran, 0, ',', '.') . "</td></tr>
+// <tr><td class='text-center'>2</td><td>Sumbangan Dana</td><td class='text-end'>" . number_format($dana, 0, ',', '.') . "</td></tr>
+// <tr><td class='text-center'>3</td><td>Sumbangan Tor-tor</td><td class='text-end'>" . number_format($tortor, 0, ',', '.') . "</td></tr>
+// <tr><td class='text-center'>4</td><td>Bayar Kupon</td><td class='text-end'>" . number_format($kupon, 0, ',', '.') . "</td></tr>
+// <tr><td class='text-center'>5</td><td>Bayar Baju</td><td class='text-end'>" . number_format($baju, 0, ',', '.') . "</td></tr>
+// <tr><td class='text-center'>6</td><td>Bayar Silua</td><td class='text-end'>" . number_format($silua, 0, ',', '.') . "</td></tr>
+// <tr class='table-light fw-bold'>
+//   <td colspan='2' class='text-center'>TOTAL PEMASUKAN</td>
+//   <td class='text-end'>" . number_format($total_pemasukan, 0, ',', '.') . "</td>
+// </tr>
+// </tbody>
+// </table>";
+
 // echo "Halo, " . $_SESSION['nama_lengkap'] . " (Role ID: " . $_SESSION['role_id'] . ")";
 // Query gabungan untuk total pemasukan
 $query = "
 SELECT 
     IFNULL((SELECT SUM(toktok + sukarela) FROM iuran), 0) +
     IFNULL((SELECT SUM(jumlah) FROM sumbangan WHERE jenis = 'dana'), 0) +
+    IFNULL((SELECT SUM(jumlah) FROM sumbangan WHERE jenis = 'tor-tor'), 0) +
     IFNULL((SELECT SUM(bayar) FROM bayar_kupon), 0) +
     IFNULL((SELECT SUM(jumlah) FROM bayar_baju), 0) +
     IFNULL((SELECT SUM(jumlah) FROM bayar_silua), 0) AS total_pemasukan
