@@ -227,11 +227,6 @@ $jsonData = json_encode($kelompok);
                         text: 'Status',
                         bold: true,
                         alignment: 'center'
-                    },
-                    {
-                        text: 'Detail',
-                        bold: true,
-                        alignment: 'center'
                     }
                 ]);
 
@@ -259,10 +254,12 @@ $jsonData = json_encode($kelompok);
                         text: 'Detail',
                         link: baseURL + row.id,
                         color: 'blue',
-                        decoration: 'underline'
+                        decoration: 'underline',
+                        alignment: 'center'
                     } : {
                         text: '-',
-                        color: 'gray'
+                        color: 'gray',
+                        alignment: 'center'
                     };
 
                     body.push([{
@@ -282,16 +279,12 @@ $jsonData = json_encode($kelompok);
                             text: fmt(bayar),
                             alignment: 'center'
                         },
-                        {
-                            text: row.keterangan,
-                            alignment: 'center'
-                        },
+                        detailCell,
                         {
                             text: status,
                             alignment: 'center',
                             color: warna
-                        },
-                        detailCell
+                        }
                     ]);
                 });
 
@@ -322,17 +315,13 @@ $jsonData = json_encode($kelompok);
                     {
                         text: '',
                         border: [false, false, false, false]
-                    },
-                    {
-                        text: '',
-                        border: [false, false, false, false]
                     }
                 ]);
 
                 docContent.push({
                     table: {
                         headerRows: 1,
-                        widths: ['5%', '30%', '15%', '15%', '15%', '10%', '10%'],
+                        widths: ['5%', '*', '15%', '15%', '10%', '10%'],
                         body: body
                     },
                     layout: 'lightHorizontalLines',

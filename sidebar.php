@@ -205,8 +205,8 @@
                     </ul>
                 </li>
 
-                <li class="nav-item has-treeview  <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran'])) echo 'menu-open'; ?>">
-                    <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran'])) echo 'active'; ?>">
+                <li class="nav-item has-treeview  <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua'])) echo 'menu-open'; ?>">
+                    <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua'])) echo 'active'; ?>">
                         <i class="nav-icon bi bi-file-earmark-text"></i>
                         <p>
                             Laporan
@@ -216,8 +216,8 @@
                     <ul class="nav nav-treeview">
 
                         <!-- Laporan Pemasukan -->
-                        <li class="nav-item has-treeview <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon'])) echo 'menu-open'; ?>">
-                            <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon'])) echo 'active'; ?>">
+                        <li class="nav-item has-treeview <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'laptor', 'lapsilua'])) echo 'menu-open'; ?>">
+                            <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'laptor', 'lapsilua'])) echo 'active'; ?>">
                                 <i class="bi bi-graph-up"></i>
                                 <p>
                                     Laporan Pemasukan

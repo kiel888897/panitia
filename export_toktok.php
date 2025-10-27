@@ -1,17 +1,18 @@
 <?php
 require_once 'db.php';
 
-// Ambil data
+// Ambil data lengkap dengan jabatan
 $stmt = $pdo->query("
     SELECT 
         a.id AS anggota_id,
         a.nama,
+        a.jabatan,
         COALESCE(SUM(i.toktok), 0) AS total_toktok,
         COALESCE(SUM(i.sukarela), 0) AS total_sukarela
     FROM anggotas a
     LEFT JOIN iuran i ON a.id = i.anggota_id
-    GROUP BY a.id, a.nama
-    ORDER BY a.nama ASC
+    GROUP BY a.id, a.nama, a.jabatan
+    ORDER BY FIELD(a.jabatan, 'hula', 'boru', 'bere'), a.nama
 ");
 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -25,7 +26,6 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
@@ -43,194 +43,276 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         const baseURL = "<?= htmlspecialchars('https://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF'])) ?>/toktok_detail.php?id=";
         const toktokRipe = 250000;
 
-        // ===== EXCEL EXPORT =====
+        const orders = {
+            hula: 'Hula-hula',
+            boru: 'Boru',
+            bere: 'Bere & Ibebere'
+        };
+
+        const grouped = {
+            hula: [],
+            boru: [],
+            bere: []
+        };
+        data.forEach(r => {
+            const key = r.jabatan ? r.jabatan.toLowerCase() : 'lainnya';
+            if (grouped[key]) grouped[key].push(r);
+        });
+
+        // ========== EXCEL EXPORT ==========
         document.getElementById("exportExcel").addEventListener("click", function() {
             const wb = XLSX.utils.book_new();
             const wsData = [
                 ["No", "Nama Anggota", "Toktok Ripe (Rp)", "Sukarela (Rp)", "Total Pembayaran (Rp)", "Keterangan", "Status"]
             ];
+
             let i = 1;
-            let grandToktok = 0;
-            let grandSukarela = 0;
-            let grandTotal = 0;
+            let grandToktok = 0,
+                grandSukarela = 0,
+                grandTotal = 0;
 
-            data.forEach(row => {
-                const totalToktok = parseInt(row.total_toktok);
-                const totalSukarela = parseInt(row.total_sukarela);
-                const status = totalToktok >= toktokRipe ? "Lunas" : (totalToktok > 0 ? "Cicilan" : "Belum Bayar");
-                const ket = totalToktok > 0 ? `Detail Pembayaran (${baseURL + row.anggota_id})` : "-";
+            for (const key in orders) {
+                const rows = grouped[key];
+                if (!rows.length) continue;
 
-                wsData.push([i++, row.nama, toktokRipe, totalSukarela, totalToktok, ket, status]);
+                wsData.push([]);
+                wsData.push([orders[key]]); // Header kelompok
 
-                grandToktok += toktokRipe;
-                grandSukarela += totalSukarela;
-                grandTotal += totalToktok;
-            });
+                let subTok = 0,
+                    subSuk = 0,
+                    subTot = 0;
 
-            // Tambahkan baris total
+                rows.forEach(r => {
+                    const totalToktok = parseInt(r.total_toktok);
+                    const totalSukarela = parseInt(r.total_sukarela);
+                    const totalBayar = totalToktok + totalSukarela;
+
+                    const status = totalBayar >= toktokRipe ? "Lunas" : (totalBayar > 0 ? "Cicilan" : "Belum Bayar");
+                    const ket = totalBayar > 0 ? `Detail Pembayaran (${baseURL + r.anggota_id})` : "-";
+
+                    wsData.push([i++, r.nama, toktokRipe, totalSukarela, totalBayar, ket, status]);
+
+                    subTok += toktokRipe;
+                    subSuk += totalSukarela;
+                    subTot += totalBayar;
+                });
+
+                wsData.push(["", `SUBTOTAL ${orders[key]}`, subTok, subSuk, subTot, "", ""]);
+                grandToktok += subTok;
+                grandSukarela += subSuk;
+                grandTotal += subTot;
+            }
+
+            // TOTAL AKHIR
             wsData.push([]);
-            wsData.push([
-                "", "TOTAL", grandToktok, grandSukarela, grandTotal, "", ""
-            ]);
+            wsData.push(["", "TOTAL SELURUHNYA", grandToktok, grandSukarela, grandTotal, "", ""]);
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             XLSX.utils.book_append_sheet(wb, ws, "Laporan Toktok");
 
-            // Auto width kolom
+            // Auto-width kolom
             const colWidths = wsData[0].map((_, idx) => ({
                 wch: Math.max(...wsData.map(row => String(row[idx] || "").length)) + 2
             }));
             ws['!cols'] = colWidths;
 
             const today = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-            XLSX.writeFile(wb, `laporan_tok-tok-ripe_${today}.xlsx`);
+            XLSX.writeFile(wb, `laporan_toktok_ripe_${today}.xlsx`);
         });
 
 
-        // ===== PDF EXPORT =====
+        // ========== PDF EXPORT ==========
         document.getElementById("exportPDF").addEventListener("click", function() {
-            const bodyData = [
-                [{
-                        text: '#',
-                        bold: true,
-                        alignment: 'center'
-                    },
-                    {
-                        text: 'Nama Anggota',
-                        bold: true,
-                        alignment: 'left'
-                    },
-                    {
-                        text: 'Toktok Ripe (Rp)',
-                        bold: true,
-                        alignment: 'center'
-                    },
-                    {
-                        text: 'Sukarela (Rp)',
-                        bold: true,
-                        alignment: 'center'
-                    },
-                    {
-                        text: 'Total Pembayaran (Rp)',
-                        bold: true,
-                        alignment: 'center'
-                    },
-                    {
-                        text: 'Keterangan',
-                        bold: true,
-                        alignment: 'center'
-                    },
-                    {
-                        text: 'Status',
-                        bold: true,
-                        alignment: 'center'
-                    }
-                ]
+            const bodyData = [];
+
+            // HEADER KOLUMNYA MUNCUL SEKALI DI AWAL
+            const headerRow = [{
+                    text: '#',
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: 'Nama Anggota',
+                    bold: true
+                },
+                {
+                    text: 'Toktok Ripe (Rp)',
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: 'Sukarela (Rp)',
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: 'Total Pembayaran (Rp)',
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: 'Keterangan',
+                    bold: true,
+                    alignment: 'center'
+                },
+                {
+                    text: 'Status',
+                    bold: true,
+                    alignment: 'center'
+                }
             ];
+            bodyData.push(headerRow);
 
             let i = 1;
-            let grandToktok = 0;
-            let grandSukarela = 0;
-            let grandTotal = 0;
+            let grandToktok = 0,
+                grandSukarela = 0,
+                grandTotal = 0;
 
-            data.forEach(row => {
-                const totalToktok = parseInt(row.total_toktok);
-                const totalSukarela = parseInt(row.total_sukarela);
+            for (const key in orders) {
+                const rows = grouped[key];
+                if (!rows.length) continue;
 
-                let status = "";
-                let warna = "black"; // default warna teks
-                if (totalToktok >= toktokRipe) {
-                    status = "Lunas";
-                    warna = "green";
-                } else if (totalToktok > 0) {
-                    status = "Cicilan";
-                    warna = "orange";
-                } else {
-                    status = "Belum Bayar";
-                    warna = "black";
-                }
+                // Header kelompok
+                bodyData.push([{
+                        text: orders[key],
+                        colSpan: 7,
+                        bold: true,
+                        fillColor: '#eeeeee',
+                        alignment: 'left'
+                    },
+                    {}, {}, {}, {}, {}, {}
+                ]);
 
-                const linkCell = totalToktok > 0 ?
-                    {
+                let subTok = 0,
+                    subSuk = 0,
+                    subTot = 0;
+
+                rows.forEach(r => {
+                    const totalToktok = parseInt(r.total_toktok);
+                    const totalSukarela = parseInt(r.total_sukarela);
+                    const totalBayar = totalToktok + totalSukarela;
+
+                    let status = "",
+                        warna = "black";
+                    if (totalBayar >= toktokRipe) {
+                        status = "Lunas";
+                        warna = "green";
+                    } else if (totalBayar > 0) {
+                        status = "Cicilan";
+                        warna = "orange";
+                    } else {
+                        status = "Belum Bayar";
+                        warna = "black";
+                    }
+
+                    const linkCell = totalBayar > 0 ? {
                         text: 'Detail Pembayaran',
-                        link: baseURL + row.anggota_id,
+                        link: baseURL + r.anggota_id,
                         color: 'blue',
                         decoration: 'underline'
-                    } :
-                    {
+                    } : {
                         text: '-',
                         color: 'gray'
                     };
 
+                    bodyData.push([{
+                            text: i++,
+                            alignment: 'center'
+                        },
+                        {
+                            text: r.nama,
+                            alignment: 'left'
+                        },
+                        {
+                            text: toktokRipe.toLocaleString('id-ID'),
+                            alignment: 'right'
+                        },
+                        {
+                            text: totalSukarela.toLocaleString('id-ID'),
+                            alignment: 'right'
+                        },
+                        {
+                            text: totalBayar.toLocaleString('id-ID'),
+                            alignment: 'right'
+                        },
+                        linkCell,
+                        {
+                            text: status,
+                            color: warna,
+                            alignment: 'center'
+                        }
+                    ]);
+
+                    subTok += toktokRipe;
+                    subSuk += totalSukarela;
+                    subTot += totalBayar;
+                });
+
+                // SUBTOTAL
                 bodyData.push([{
-                        text: i++,
+                        text: '',
+                        border: [false, false, false, false]
+                    },
+                    {
+                        text: `SUBTOTAL ${orders[key]}`,
+                        bold: true,
                         alignment: 'center'
                     },
                     {
-                        text: row.nama,
-                        alignment: 'left',
-                        color: warna
-                    }, // nama berwarna sesuai status
-                    {
-                        text: toktokRipe.toLocaleString('id-ID'),
-                        alignment: 'center'
+                        text: subTok.toLocaleString('id-ID'),
+                        bold: true,
+                        alignment: 'right'
                     },
                     {
-                        text: totalSukarela.toLocaleString('id-ID'),
-                        alignment: 'center'
+                        text: subSuk.toLocaleString('id-ID'),
+                        bold: true,
+                        alignment: 'right'
                     },
                     {
-                        text: totalToktok.toLocaleString('id-ID'),
-                        alignment: 'center'
+                        text: subTot.toLocaleString('id-ID'),
+                        bold: true,
+                        alignment: 'right'
                     },
-                    linkCell,
-                    {
-                        text: status,
-                        alignment: 'center',
-                        color: warna
-                    } // status berwarna juga
+                    {}, {}
                 ]);
 
-                grandToktok += toktokRipe;
-                grandSukarela += totalSukarela;
-                grandTotal += totalToktok;
-            });
+                grandToktok += subTok;
+                grandSukarela += subSuk;
+                grandTotal += subTot;
+            }
 
-
-            // Tambahkan baris total
+            // TOTAL AKHIR
             bodyData.push([{
                     text: '',
-                    border: [false, false, false, false]
                 },
                 {
-                    text: 'TOTAL',
+                    text: 'TOTAL SELURUHNYA',
                     bold: true,
                     alignment: 'center'
                 },
                 {
-                    text: grandToktok.toLocaleString('id-ID'),
+                    text: 'Rp ' + grandToktok.toLocaleString('id-ID'),
                     bold: true,
-                    alignment: 'center'
+                    alignment: 'right'
                 },
                 {
-                    text: grandSukarela.toLocaleString('id-ID'),
+                    text: 'Rp ' + grandSukarela.toLocaleString('id-ID'),
                     bold: true,
-                    alignment: 'center'
+                    alignment: 'right'
                 },
                 {
-                    text: grandTotal.toLocaleString('id-ID'),
+                    text: 'Rp ' + grandTotal.toLocaleString('id-ID'),
                     bold: true,
-                    alignment: 'center'
+                    alignment: 'right'
                 },
                 {
                     text: '',
-                    border: [false, false, false, false]
                 },
                 {
                     text: '',
-                    border: [false, false, false, false]
                 }
             ]);
+
 
             const docDefinition = {
                 content: [{
@@ -269,7 +351,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             };
 
             const today = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-            pdfMake.createPdf(docDefinition).download(`laporan_tok-tok-ripe_${today}.pdf`);
+            pdfMake.createPdf(docDefinition).download(`laporan_toktok_ripe_${today}.pdf`);
         });
     </script>
 
