@@ -1,27 +1,7 @@
 <?php
 require_once 'db.php';
 
-function tanggal_indo($tgl = null)
-{
-    $bulan = [
-        1 => 'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
-    ];
-    $tgl = $tgl ? strtotime($tgl) : time();
-    return date('j', $tgl) . ' ' . $bulan[(int)date('n', $tgl)] . ' ' . date('Y', $tgl);
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 
@@ -53,85 +33,25 @@ function tanggal_indo($tgl = null)
             border-left: 5px solid #0d6efd;
             margin-top: 2rem;
         }
-
-        @media print {
-
-            /* body {
-                text-transform: uppercase;
-            } */
-
-            /* Hilangkan tombol cetak saat print */
-            #printPDF,
-            .btn {
-                display: none !important;
-            }
-
-            /* Ukuran halaman dan margin */
-            @page {
-                size: A4 portrait;
-                margin: 15mm;
-            }
-
-            /* Supaya h3 dan tabel rekap tetap satu halaman */
-            .page-keep-together {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-
-            /* H4 section berikutnya mulai halaman baru */
-            h4.section-title {
-                page-break-before: always;
-            }
-
-            /* Header tabel tetap tampil di setiap halaman */
-            table {
-                page-break-inside: auto;
-                width: 100%;
-                border-collapse: collapse;
-            }
-
-            tr {
-                page-break-inside: avoid;
-                page-break-after: auto;
-            }
-
-            thead {
-                display: table-header-group;
-            }
-
-            tfoot {
-                display: table-footer-group;
-            }
-
-            /* Font lebih kecil agar muat di satu halaman */
-            body {
-                font-size: 12px;
-            }
-        }
     </style>
 </head>
 
 <body class="p-4">
     <div class="container-fluid">
-        <div class="page-keep-together mb-4">
-            <h2 class="text-center mb-1">Laporan Pemasukan</h2>
-            <h3 class="text-center mb-1">Bona Taon 2026 PTS Bali</h3>
+        <h3 class="text-center mb-3">Laporan Pemasukan PTS</h3>
 
-            <p class="text-center"><i><?= 'Tanggal: ' . tanggal_indo() ?></i></p>
-
-            <div class="text-center mb-3 no-print">
-                <button id="printPDF" class="btn btn-danger">
-                    <i class="bi bi-printer"></i> Cetak / Simpan PDF
-                </button>
-            </div>
-
-            <?php
-            echo "<h4 class='mt-3'>Rekap Laporan Pemasukan / Sumber dana</h4>";
-            ?>
+        <div class="text-center mb-4">
+            <button id="exportExcel" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </button>
+            <button id="exportPDF" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </button>
         </div>
 
         <?php
 
+        echo "<h4 class='section-title mt-4'>Rekap Laporan Pemasukan</h4>";
         // === 1. TOKTOK & SUKARELA ===
         $stmt = $pdo->query("
     SELECT 
@@ -318,10 +238,10 @@ function tanggal_indo($tgl = null)
 
         echo "
 <tr class='table-light fw-bold'>
-  <td colspan='2' class='text-center'>TOTAL SELURUH PEMASUKAN</td>
-  <td class='text-end'>Rp " . number_format($totalJumlah, 0, ',', '.') . "</td>
-  <td class='text-end'>Rp " . number_format($totalBayar, 0, ',', '.') . "</td>
-  <td class='text-end'>Rp " . number_format($totalPiutang, 0, ',', '.') . "</td>
+  <td colspan='2' class='text-center'>TOTAL PEMASUKAN</td>
+  <td class='text-end'>" . number_format($totalJumlah, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalBayar, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalPiutang, 0, ',', '.') . "</td>
 </tr>
 </tbody>
 </table>";
@@ -330,7 +250,7 @@ function tanggal_indo($tgl = null)
             Details
             ============================================================ */
         /* ================= TOK-TOK RIPE ================= */
-        echo "<h4 class='section-title mt-4'>Tok-tok Ripe & Sukarela</h4>";
+        echo "<h4 class='section-title mt-4'>Tok-tok Ripe</h4>";
 
         /* ============================================================
             2. DATA TOK-TOK RIPE
@@ -431,10 +351,10 @@ function tanggal_indo($tgl = null)
             }
 
             echo "<tr class='table-light fw-bold'>
-        <td colspan='2' class='text-center'>TOTAL SELURUHNYA Tok-tok Ripe & Sukarela</td>
-        <td class='text-end'>Rp " . number_format($grandTok, 0, ',', '.') . "</td>
-        <td class='text-end'>Rp " . number_format($grandSuk, 0, ',', '.') . "</td>
-        <td class='text-end'>Rp " . number_format($grandTot, 0, ',', '.') . "</td>
+        <td colspan='2' class='text-center'>TOTAL SELURUHNYA</td>
+        <td class='text-end'>" . number_format($grandTok, 0, ',', '.') . "</td>
+        <td class='text-end'>" . number_format($grandSuk, 0, ',', '.') . "</td>
+        <td class='text-end'>" . number_format($grandTot, 0, ',', '.') . "</td>
         <td colspan='2'></td>
       </tr>
       </tbody></table>";
@@ -527,10 +447,10 @@ function tanggal_indo($tgl = null)
             }
 
             echo "<tr class='table-light fw-bold'>
-        <td colspan='3' class='text-center'>TOTAL Baju PTS</td>
-        <td class='text-center'>" . number_format($totalQty, 0, ',', '.') . " pcs</td>
-        <td class='text-end'>Rp " . number_format($totalPesanan, 0, ',', '.') . "</td>
-        <td class='text-end'>Rp" . number_format($totalBayar, 0, ',', '.') . "</td>
+        <td colspan='3' class='text-center'>TOTAL</td>
+        <td class='text-center'>" . number_format($totalQty, 0, ',', '.') . "</td>
+        <td class='text-end'>" . number_format($totalPesanan, 0, ',', '.') . "</td>
+        <td class='text-end'>" . number_format($totalBayar, 0, ',', '.') . "</td>
         <td colspan='2'></td>
     </tr>
     </tbody>
@@ -539,7 +459,7 @@ function tanggal_indo($tgl = null)
 
 
         /* ================= KUPON ================= */
-        echo "<h4 class='section-title mt-4'>Kupon Bajar KFC</h4>";
+        echo "<h4 class='section-title mt-4'>Kupon PTS</h4>";
 
 
         /* ============================================================
@@ -623,11 +543,11 @@ function tanggal_indo($tgl = null)
             }
 
             echo "<tr class='table-light fw-bold'>
-        <td colspan='3' class='text-center'>TOTAL kupon bajar KFC</td>
+        <td colspan='3' class='text-center'>TOTAL</td>
         <td class='text-center'>" . number_format($tJumlah, 0, ',', '.') . "</td>
         <td class='text-center'>" . number_format($tKembali, 0, ',', '.') . "</td>
-        <td class='text-end'>Rp " . number_format($tTagihan, 0, ',', '.') . "</td>
-        <td class='text-end'>Rp " . number_format($tBayar, 0, ',', '.') . "</td>
+        <td class='text-end'>" . number_format($tTagihan, 0, ',', '.') . "</td>
+        <td class='text-end'>" . number_format($tBayar, 0, ',', '.') . "</td>
         <td colspan='2'></td>
     </tr>
     </tbody>
@@ -636,7 +556,7 @@ function tanggal_indo($tgl = null)
 
 
         /* ================= SUMBANGAN DANA ================= */
-        echo "<h4 class='section-title mt-4'>Sumbangan Dana / Proposal</h4>";
+        echo "<h4 class='section-title mt-4'>Sumbangan Dana</h4>";
 
 
         /* ============================================================
@@ -701,8 +621,8 @@ function tanggal_indo($tgl = null)
             }
 
             echo "<tr class='table-light fw-bold'>
-        <td colspan='3' class='text-center'>TOTAL Sumbangan Dana</td>
-        <td class='text-end'>Rp " . number_format($totalJumlah, 0, ',', '.') . "</td>
+        <td colspan='3' class='text-center'>TOTAL</td>
+        <td class='text-end'>" . number_format($totalJumlah, 0, ',', '.') . "</td>
         <td colspan='2'></td>
     </tr>
     </tbody>
@@ -767,8 +687,8 @@ function tanggal_indo($tgl = null)
             }
 
             echo "<tr class='table-light fw-bold'>
-        <td colspan='2' class='text-center'>TOTAL Tor-tor</td>
-        <td class='text-end'>Rp " . number_format($totalJumlah, 0, ',', '.') . "</td>
+        <td colspan='2' class='text-center'>TOTAL</td>
+        <td class='text-end'>" . number_format($totalJumlah, 0, ',', '.') . "</td>
         <td colspan='3'></td>
     </tr>
     </tbody>
@@ -863,8 +783,8 @@ function tanggal_indo($tgl = null)
                 // subtotal per kelompok
                 echo "<tr class='fw-bold'>
                 <td colspan='2' class='text-center'>SUBTOTAL {$label}</td>
-                <td class='text-end'>Rp " . number_format($subSilua, 0, ',', '.') . "</td>
-                <td class='text-end'>Rp " . number_format($subBayar, 0, ',', '.') . "</td>
+                <td class='text-end'>" . number_format($subSilua, 0, ',', '.') . "</td>
+                <td class='text-end'>" . number_format($subBayar, 0, ',', '.') . "</td>
                 <td colspan='2'></td>
               </tr>";
 
@@ -875,8 +795,8 @@ function tanggal_indo($tgl = null)
             // total seluruhnya
             echo "<tr class='table-light fw-bold'>
             <td colspan='2' class='text-center'>TOTAL Dana Silua</td>
-            <td class='text-end'>Rp " . number_format($grandSilua, 0, ',', '.') . "</td>
-            <td class='text-end'>Rp " . number_format($grandBayar, 0, ',', '.') . "</td>
+            <td class='text-end'>" . number_format($grandSilua, 0, ',', '.') . "</td>
+            <td class='text-end'>" . number_format($grandBayar, 0, ',', '.') . "</td>
             <td colspan='2'></td>
           </tr>";
 
@@ -886,9 +806,256 @@ function tanggal_indo($tgl = null)
         ?>
     </div>
     <script>
-        document.getElementById("printPDF").addEventListener("click", () => {
-            window.print();
-        });
+        /* ---------- Helpers ---------- */
+        function getTodayString() {
+            const d = new Date();
+            return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        // Coba parse string angka "1.234.567" atau "Rp 1.234.567" => number 1234567
+        function parseIndoNumber(str) {
+            if (typeof str !== 'string') return null;
+            // hapus non digit, minus; kecuali koma/dot (kita akan remove dot)
+            // tapi lebih aman: hapus semua selain digits and minus
+            let s = str.replace(/\s+/g, ''); // remove spaces
+            s = s.replace(/Rp|rp|,00/g, ''); // hapus Rp if any
+            // jika ada dot sebagai thousands separator, hapus semua dot
+            s = s.replace(/\./g, '');
+            // ubah koma desimal jadi titik (jika ada)
+            s = s.replace(/,/g, '.');
+            // sekarang jika s hanya mengandung digits, minus or dot -> parseFloat
+            if (/^[\d\.\-]+$/.test(s)) {
+                const n = Number(s);
+                if (!isNaN(n)) return n;
+            }
+            return null;
+        }
+
+        /* ---------- EXPORT PDF ---------- */
+        function exportPDF() {
+            try {
+                const sections = document.querySelectorAll("h4.section-title");
+                if (!sections.length) {
+                    alert("Tidak menemukan header laporan (h4.section-title).");
+                    return;
+                }
+
+                const content = [];
+
+                sections.forEach((h4, sIdx) => {
+                    // page break before except first
+                    if (sIdx > 0) content.push({
+                        text: '',
+                        pageBreak: 'before'
+                    });
+
+                    // judul section
+                    content.push({
+                        text: h4.innerText.trim(),
+                        style: 'header'
+                    });
+
+                    // baca isi sampai next h4.section-title
+                    let next = h4.nextElementSibling;
+                    while (next && !next.matches("h4.section-title")) {
+                        if (next.tagName === 'TABLE') {
+                            // build body rows, dan cari maxCols
+                            const rows = Array.from(next.querySelectorAll('tr'));
+                            if (rows.length === 0) {
+                                next = next.nextElementSibling;
+                                continue;
+                            }
+
+                            let maxCols = 0;
+                            const parsedRows = rows.map(tr => {
+                                const cells = Array.from(tr.querySelectorAll('th, td'));
+                                if (cells.length > maxCols) maxCols = cells.length;
+                                return cells;
+                            });
+
+                            const body = parsedRows.map(cells => {
+                                const row = [];
+                                for (let ci = 0; ci < maxCols; ci++) {
+                                    const cell = cells[ci];
+                                    if (!cell) {
+                                        row.push(''); // important: do not push undefined
+                                        continue;
+                                    }
+                                    const a = cell.querySelector('a');
+                                    if (a && a.href) {
+                                        row.push({
+                                            text: (a.innerText || a.href).trim(),
+                                            link: a.href,
+                                            color: 'blue',
+                                            decoration: 'underline'
+                                        });
+                                    } else {
+                                        // ambil text, trim, replace multiple spaces / newline
+                                        let txt = cell.innerText.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
+                                        row.push(txt);
+                                    }
+                                }
+                                return row;
+                            });
+
+                            // determine headerRows: if first tr has any TH elements => headerRows = 1
+                            const firstRowHasTh = !!rows[0].querySelectorAll('th').length;
+                            const headerRows = firstRowHasTh ? 1 : 0;
+
+                            content.push({
+                                table: {
+                                    headerRows: headerRows,
+                                    widths: Array(maxCols).fill('*'),
+                                    body: body
+                                },
+                                layout: 'lightHorizontalLines',
+                                margin: [0, 6, 0, 10]
+                            });
+                        } else {
+                            // teks / paragraph etc
+                            const txt = next.innerText ? next.innerText.trim() : '';
+                            if (txt) content.push({
+                                text: txt,
+                                margin: [0, 4, 0, 4]
+                            });
+                        }
+                        next = next.nextElementSibling;
+                    }
+                });
+
+                const docDefinition = {
+                    info: {
+                        title: 'Laporan Pemasukan'
+                    },
+                    content,
+                    styles: {
+                        header: {
+                            fontSize: 14,
+                            bold: true,
+                            margin: [0, 8, 0, 8]
+                        },
+                    },
+                    pageSize: 'A4',
+                    pageMargins: [30, 40, 30, 40]
+                };
+
+                const filename = `laporan_pemasukan_${getTodayString()}.pdf`;
+                pdfMake.createPdf(docDefinition).download(filename);
+            } catch (err) {
+                console.error("exportPDF error:", err);
+                alert("Terjadi kesalahan saat membuat PDF. Cek console untuk detail.");
+            }
+        }
+
+        /* ---------- EXPORT EXCEL ---------- */
+        function exportExcel() {
+            try {
+                const workbook = XLSX.utils.book_new();
+                const sections = document.querySelectorAll("h4.section-title");
+                if (!sections.length) {
+                    alert("Tidak menemukan header laporan (h4.section-title).");
+                    return;
+                }
+
+                sections.forEach((h4, sIdx) => {
+                    // ambil html sampai h4 berikutnya
+                    let next = h4.nextElementSibling;
+                    // collect tables under this section (bisa 0..n)
+                    while (next && !next.matches("h4.section-title")) {
+                        if (next.tagName === 'TABLE') {
+                            const table = next;
+                            // parse rows and cells into array-of-arrays
+                            const trs = Array.from(table.querySelectorAll('tr'));
+                            if (!trs.length) {
+                                next = next.nextElementSibling;
+                                continue;
+                            }
+
+                            const aoa = [];
+                            const linkMap = {}; // 'r_c' => href
+
+                            trs.forEach((tr, rIdx) => {
+                                const cells = Array.from(tr.querySelectorAll('th, td'));
+                                const rowArr = [];
+                                cells.forEach((cell, cIdx) => {
+                                    // if anchor exists, capture href and text
+                                    const a = cell.querySelector('a');
+                                    let text = cell.innerText ? cell.innerText.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim() : '';
+                                    if (a && a.href) {
+                                        // simpan link, gunakan text sebagai value
+                                        linkMap[`${rIdx}_${cIdx}`] = a.href;
+                                        text = text || a.href;
+                                    }
+
+                                    // coba parse angka indo -> number
+                                    const maybeNum = parseIndoNumber(text);
+                                    if (maybeNum !== null) {
+                                        rowArr.push(maybeNum);
+                                    } else {
+                                        rowArr.push(text);
+                                    }
+                                });
+                                aoa.push(rowArr);
+                            });
+
+                            // pad short rows so matrix is rectangular
+                            let maxCols = 0;
+                            aoa.forEach(r => {
+                                if (r.length > maxCols) maxCols = r.length;
+                            });
+                            aoa.forEach(r => {
+                                while (r.length < maxCols) r.push('');
+                            });
+
+                            // create sheet and then add hyperlinks & types
+                            const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+                            // assign hyperlink objects and ensure numeric cells are numbers
+                            for (let r = 0; r < aoa.length; r++) {
+                                for (let c = 0; c < maxCols; c++) {
+                                    const addr = XLSX.utils.encode_cell({
+                                        r,
+                                        c
+                                    });
+                                    const cell = ws[addr];
+                                    if (!cell) continue;
+                                    // if entry is numeric in aoa, ensure cell.t = 'n'
+                                    const v = aoa[r][c];
+                                    if (typeof v === 'number') {
+                                        ws[addr].t = 'n';
+                                        ws[addr].v = v;
+                                    }
+                                    const key = `${r}_${c}`;
+                                    if (linkMap[key]) {
+                                        ws[addr].l = {
+                                            Target: linkMap[key],
+                                            Tooltip: 'Buka link'
+                                        };
+                                    }
+                                }
+                            }
+
+                            // sheet name: combine section name + index, trim illegal chars and length
+                            const baseName = h4.innerText.trim().substring(0, 25).replace(/[\[\]\*\/\\\?\:]/g, '');
+                            const sheetName = (baseName + (sIdx > 0 ? `_${sIdx}` : '')).substring(0, 31);
+
+                            XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+                        }
+                        next = next.nextElementSibling;
+                    }
+                });
+
+                const filename = `laporan_pemasukan_${getTodayString()}.xlsx`;
+                XLSX.writeFile(workbook, filename);
+            } catch (err) {
+                console.error("exportExcel error:", err);
+                alert("Terjadi kesalahan saat membuat Excel. Cek console untuk detail.");
+            }
+        }
+
+        /* ---------- Event listeners ---------- */
+        document.getElementById("exportPDF").addEventListener("click", exportPDF);
+        document.getElementById("exportExcel").addEventListener("click", exportExcel);
     </script>
 
 

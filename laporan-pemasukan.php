@@ -276,7 +276,7 @@ if (!isset($_SESSION['admin_id'])) {
 
                             echo "
 <tr class='table-light fw-bold'>
-  <td colspan='2' class='text-center'>TOTAL KESELURUHAN</td>
+  <td colspan='2' class='text-center'>TOTAL PEMASUKAN</td>
   <td class='text-end'>" . number_format($totalJumlah, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($totalBayar, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($totalPiutang, 0, ',', '.') . "</td>
