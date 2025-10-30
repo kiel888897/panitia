@@ -205,8 +205,8 @@
                     </ul>
                 </li>
 
-                <li class="nav-item has-treeview  <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua'])) echo 'menu-open'; ?>">
-                    <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua'])) echo 'active'; ?>">
+                <li class="nav-item has-treeview  <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua', 'lapacara', 'lapkonsumsi', 'lapperlengkapan'])) echo 'menu-open'; ?>">
+                    <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua', 'lapacara', 'lapkonsumsi', 'lapperlengkapan'])) echo 'active'; ?>">
                         <i class="nav-icon bi bi-file-earmark-text"></i>
                         <p>
                             Laporan
@@ -271,7 +271,7 @@
                         </li>
 
                         <!-- Laporan Pengeluaran -->
-                        <li class="nav-item has-treeview">
+                        <li class="nav-item has-treeview <?php if (in_array($menu, ['lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lappengeluaran'])) echo 'menu-open'; ?>">
                             <a href="#" class="nav-link <?php if (in_array($menu, ['lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lappengeluaran'])) echo 'active'; ?>">
                                 <i class="bi bi-wallet2"></i>
                                 <p>
@@ -293,14 +293,14 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#.php" class="nav-link <?php if ($menu === 'lapperlengkapan') echo 'active'; ?>">
+                                    <a href="laporan-pengeluaran.php?seksi=perlengkapan" class="nav-link <?php if ($menu === 'lapperlengkapan') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Seksi Perlengkapan</p>
                                     </a>
                                 </li>
 
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link <?php if ($menu === 'lappengeluaran') echo 'active'; ?>">
+                                    <a href="laporan-pengeluaran.php" class="nav-link <?php if ($menu === 'lappengeluaran') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Semua Pengeluaran</p>
                                     </a>
