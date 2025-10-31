@@ -205,8 +205,8 @@
                     </ul>
                 </li>
 
-                <li class="nav-item has-treeview  <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua', 'lapacara', 'lapkonsumsi', 'lapperlengkapan'])) echo 'menu-open'; ?>">
-                    <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua', 'lapacara', 'lapkonsumsi', 'lapperlengkapan'])) echo 'active'; ?>">
+                <li class="nav-item has-treeview  <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua', 'lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lapdana'])) echo 'menu-open'; ?>">
+                    <a href="#" class="nav-link <?php if (in_array($menu, ['lappemasukan', 'laptoktok', 'lapripe', 'lapsumbangan', 'lapkaos', 'lapkupon', 'sumbangan-produk', 'lappengeluaran', 'laptor', 'lapsilua', 'lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lapdana'])) echo 'active'; ?>">
                         <i class="nav-icon bi bi-file-earmark-text"></i>
                         <p>
                             Laporan
@@ -271,8 +271,8 @@
                         </li>
 
                         <!-- Laporan Pengeluaran -->
-                        <li class="nav-item has-treeview <?php if (in_array($menu, ['lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lappengeluaran'])) echo 'menu-open'; ?>">
-                            <a href="#" class="nav-link <?php if (in_array($menu, ['lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lappengeluaran'])) echo 'active'; ?>">
+                        <li class="nav-item has-treeview <?php if (in_array($menu, ['lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lappengeluaran', 'lapdana'])) echo 'menu-open'; ?>">
+                            <a href="#" class="nav-link <?php if (in_array($menu, ['lapacara', 'lapkonsumsi', 'lapperlengkapan', 'lappengeluaran', 'lapdana'])) echo 'active'; ?>">
                                 <i class="bi bi-wallet2"></i>
                                 <p>
                                     Laporan Pengeluaran
@@ -281,13 +281,20 @@
                             </a>
                             <ul class="nav nav-treeview ps-3">
                                 <li class="nav-item">
-                                    <a href="#.php" class="nav-link <?php if ($menu === 'lapacara') echo 'active'; ?>">
+                                    <a href="laporan-pengeluaran.php?seksi=acara" class="nav-link <?php if ($menu === 'lapacara') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Seksi Acara</p>
                                     </a>
                                 </li>
+
                                 <li class="nav-item">
-                                    <a href="#.php" class="nav-link <?php if ($menu === 'lapkonsumsi') echo 'active'; ?>">
+                                    <a href="laporan-pengeluaran.php?seksi=dana" class="nav-link <?php if ($menu === 'lapdana') echo 'active'; ?>">
+                                        <i class="bi bi-circle"></i>
+                                        <p>Seksi Dana</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="laporan-pengeluaran.php?seksi=konsumsi" class="nav-link <?php if ($menu === 'lapkonsumsi') echo 'active'; ?>">
                                         <i class="bi bi-circle"></i>
                                         <p>Seksi Konsumsi</p>
                                     </a>

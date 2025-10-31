@@ -10,13 +10,17 @@ if (!isset($_SESSION['admin_id'])) {
 
 // --- Mapping seksi ---
 $mappingSeksi = [
+    'bendahara' => 2,
     'acara' => 3,
+    'dana' => 4,
     'perlengkapan' => 5,
     'konsumsi' => 6
 ];
 
 $seksiNamaMap = [
+    'bendahara' => 'Bendahara',
     'acara' => 'Acara',
+    'dana' => 'Dana',
     'konsumsi' => 'Konsumsi',
     'perlengkapan' => 'Perlengkapan'
 ];
@@ -109,8 +113,8 @@ foreach ($pengeluaran as $row) {
             <div class="modal-body p-0" style="height: 30vh;">
                 <?php
                 $iframeSrc = 'export_pengeluaran.php';
-                if (!empty($filter)) {
-                    $iframeSrc .= '?seksi=' . urlencode($filter);
+                if (!empty($filterSeksi)) {
+                    $iframeSrc .= '?seksi=' . urlencode($filterSeksi);
                 }
                 ?>
                 <iframe src="<?= htmlspecialchars($iframeSrc) ?>" style="width:100%;height:100%;border:none;"></iframe>
@@ -186,7 +190,7 @@ foreach ($pengeluaran as $row) {
                                                 <td><?= htmlspecialchars($row['seksi_nama']) ?></td>
                                                 <td><?= htmlspecialchars($row['nama']) ?></td>
                                                 <td class="text-end">Rp <?= number_format($row['jumlah'], 0, ',', '.') ?></td>
-                                                <td><?= htmlspecialchars($row['keterangan']) ?></td>
+                                                <td><?= $row['keterangan'] ?></td>
                                                 <td class="text-center">
                                                     <?php if (!empty($row['nota'])): ?>
                                                         <a href="uploads/<?= htmlspecialchars($row['nota']) ?>" target="_blank">Lihat Nota</a>
