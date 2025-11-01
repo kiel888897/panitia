@@ -13,12 +13,21 @@ $success = '';
 
 // Ambil hanya anggota yang punya order_items
 $anggotaStmt = $pdo->query("
-    SELECT DISTINCT a.id, a.nama
+    SELECT 
+        a.id,
+        a.nama,
+        COALESCE(SUM(oi.qty * 100000), 0) AS total_tagihan,
+        COALESCE(SUM(bb.jumlah), 0) AS total_bayar
     FROM anggota a
-    JOIN order_items oi ON oi.order_id = a.id
+    LEFT JOIN order_items oi ON oi.order_id = a.id
+    LEFT JOIN bayar_baju bb ON bb.anggota_id = a.id
+    GROUP BY a.id, a.nama
+    HAVING total_bayar < total_tagihan
     ORDER BY a.nama ASC
 ");
 $anggotas = $anggotaStmt->fetchAll(PDO::FETCH_ASSOC);
+
+
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -186,9 +195,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <select name="anggota_id" class="form-select" required>
                                                 <option value="">-- Pilih Anggota --</option>
                                                 <?php foreach ($anggotas as $a): ?>
-                                                    <option value="<?= $a['id'] ?>"><?= htmlspecialchars($a['nama']) ?></option>
+                                                    <option value="<?= $a['id'] ?>">
+                                                        <?= htmlspecialchars($a['nama']) ?>
+                                                        (<?= number_format($a['total_bayar'], 0, ',', '.') ?> /
+                                                        <?= number_format($a['total_tagihan'], 0, ',', '.') ?>)
+                                                    </option>
                                                 <?php endforeach; ?>
                                             </select>
+
                                         </div>
 
                                         <div class="mb-3">
