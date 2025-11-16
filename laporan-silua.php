@@ -1,35 +1,16 @@
-<?php
-$menu = 'lapsilua';
+<?php $menu = 'lapsilua';
 session_start();
 require_once 'db.php';
-
-// Cek login
+// Cek login 
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
-
-// Ambil data silua + total pembayaran
-$stmt = $pdo->query("
-    SELECT 
-        a.id,
-        a.nama,
-        a.jumlah AS total_silua,
-        a.keterangan,
-        COALESCE(SUM(b.jumlah), 0) AS total_bayar
-    FROM silua a
-    LEFT JOIN bayar_silua b ON a.id = b.silua_id
-    GROUP BY a.id, a.nama, a.jumlah, a.keterangan
-    ORDER BY a.keterangan, a.nama ASC
-");
+// Ambil data silua + total pembayaran 
+$stmt = $pdo->query(" SELECT a.id, a.nama, a.jumlah AS total_silua, a.keterangan, COALESCE(SUM(b.jumlah), 0) AS total_bayar FROM silua a LEFT JOIN bayar_silua b ON a.id = b.silua_id GROUP BY a.id, a.nama, a.jumlah, a.keterangan ORDER BY a.keterangan, a.nama ASC ");
 $siluas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 // Kelompokkan berdasarkan keterangan
-$kelompok = [
-    'hula' => [],
-    'boru' => [],
-    'bere' => [],
-];
+$kelompok = ['hula' => [], 'boru' => [], 'bere' => [],];
 foreach ($siluas as $s) {
     $k = strtolower(trim($s['keterangan']));
     if (isset($kelompok[$k])) {
@@ -51,7 +32,6 @@ foreach ($siluas as $s) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.12.1/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.4.2/css/buttons.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
     <style>
         .status-lunas {
             color: green;
@@ -69,35 +49,21 @@ foreach ($siluas as $s) {
         }
     </style>
 </head>
-
 <!-- Modal Export -->
 <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="exportModalLabel">
-                    <i class="bi bi-file-earmark-spreadsheet"></i> Export Data Silua PTS
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="exportModalLabel"> <i class="bi bi-file-earmark-spreadsheet"></i> Export Data Silua PTS </h5> <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0" style="height: 30vh;">
-                <iframe src="export_silua.php" style="width: 100%; height: 100%; border: none;"></iframe>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Tutup
-                </button>
-            </div>
+            <div class="modal-body p-0" style="height: 30vh;"> <iframe src="export_silua.php" style="width: 100%; height: 100%; border: none;"></iframe> </div>
+            <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> <i class="bi bi-x-circle"></i> Tutup </button> </div>
         </div>
     </div>
 </div>
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
-    <div class="">
-        <?php include 'header.php'; ?>
-        <?php include 'sidebar.php'; ?>
-
-        <main class="app-main">
+    <div class=""> <?php include 'header.php'; ?> <?php include 'sidebar.php'; ?> <main class="app-main">
             <div class="app-content-header">
                 <div class="container-fluid">
                     <div class="row">
@@ -113,31 +79,16 @@ foreach ($siluas as $s) {
                     </div>
                 </div>
             </div>
-
             <div class="app-content">
                 <div class="container-fluid">
                     <div class="card">
-                        <div class="card-body">
-                            <button type="button" class="btn btn-outline-info mb-3" data-bs-toggle="modal" data-bs-target="#exportModal">
-                                <i class="bi bi-download"></i> Export Data
-                            </button>
-
-                            <!-- Tabs untuk kategori -->
+                        <div class="card-body"> <button type="button" class="btn btn-outline-info mb-3" data-bs-toggle="modal" data-bs-target="#exportModal"> <i class="bi bi-download"></i> Export Data </button>
                             <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="hula-tab" data-bs-toggle="tab" data-bs-target="#hula" type="button" role="tab">Hula-hula</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="boru-tab" data-bs-toggle="tab" data-bs-target="#boru" type="button" role="tab">Boru</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="bere-tab" data-bs-toggle="tab" data-bs-target="#bere" type="button" role="tab">Bere & Ibebere</button>
-                                </li>
+                                <li class="nav-item" role="presentation"> <button class="nav-link active" id="hula-tab" data-bs-toggle="tab" data-bs-target="#hula" type="button" role="tab">Hula-hula</button> </li>
+                                <li class="nav-item" role="presentation"> <button class="nav-link" id="boru-tab" data-bs-toggle="tab" data-bs-target="#boru" type="button" role="tab">Boru</button> </li>
+                                <li class="nav-item" role="presentation"> <button class="nav-link" id="bere-tab" data-bs-toggle="tab" data-bs-target="#bere" type="button" role="tab">Bere & Ibebere</button> </li>
                             </ul>
-
-                            <div class="tab-content" id="myTabContent">
-                                <?php foreach (['hula' => 'Hula-hula', 'boru' => 'Boru', 'bere' => 'Bere & Ibebere'] as $key => $label): ?>
-                                    <div class="tab-pane fade <?= $key === 'hula' ? 'show active' : '' ?>" id="<?= $key ?>" role="tabpanel">
+                            <div class="tab-content" id="myTabContent"> <?php foreach (['hula' => 'Hula-hula', 'boru' => 'Boru', 'bere' => 'Bere & Ibebere'] as $key => $label): ?> <div class="tab-pane fade <?= $key === 'hula' ? 'show active' : '' ?>" id="<?= $key ?>" role="tabpanel">
                                         <div class="table-responsive">
                                             <table class="table table-bordered table-striped">
                                                 <thead class="table-light">
@@ -152,81 +103,53 @@ foreach ($siluas as $s) {
                                                 </thead>
                                                 <tbody>
                                                     <?php
-                                                    // Hitung total per kategori
-                                                    $no = 1;
-                                                    $totalKategori = 0;
-                                                    $totalSiluaKategori = 0;
+                                                                            $no = 1;
+                                                                            $totalKategori = 0;
+                                                                            $totalSiluaKategori = 0;
 
-                                                    // Siapkan array untuk sortir berdasarkan status
-                                                    $dataSort = [];
+                                                                            foreach ($kelompok[$key] as $row):
+                                                                                $silua = (int)$row['total_silua'];
+                                                                                $bayar = (int)$row['total_bayar'];
 
-                                                    // Tentukan urutan status
-                                                    $statusOrder = [
-                                                        'Lunas' => 1,
-                                                        'Cicilan' => 2,
-                                                        'Belum Bayar' => 3
-                                                    ];
-                                                    foreach ($kelompok[$key] as $row):
-                                                        $silua = (int)$row['total_silua'];
-                                                        $bayar = (int)$row['total_bayar'];
+                                                                                $totalKategori += $bayar;
+                                                                                $totalSiluaKategori += $silua;
 
-                                                        if ($bayar >= $silua) {
-                                                            $status = "Lunas";
-                                                            $rowClass = "status-lunas";
-                                                        } elseif ($bayar > 0) {
-                                                            $status = "Cicilan";
-                                                            $rowClass = "status-cicilan";
-                                                        } else {
-                                                            $status = "Belum Bayar";
-                                                            $rowClass = "status-belum";
-                                                        }
-
-                                                        // Masukkan ke array untuk disort
-                                                        $dataSort[] = [
-                                                            'row' => $row,
-                                                            'silua' => $silua,
-                                                            'bayar' => $bayar,
-                                                            'status' => $status,
-                                                            'class' => $rowClass,
-                                                            'order' => $statusOrder[$status]
-                                                        ];
-
-                                                        // Hitung total
-                                                        $totalKategori += $bayar;
-                                                        $totalSiluaKategori += $silua;
-                                                        // Sortir berdasarkan status
-                                                        usort($dataSort, function ($a, $b) {
-                                                            return $a['order'] <=> $b['order'];
-                                                        });
+                                                                                if ($bayar >= $silua) {
+                                                                                    $status = "Lunas";
+                                                                                    $rowClass = "status-lunas";
+                                                                                } elseif ($bayar > 0) {
+                                                                                    $status = "Cicilan";
+                                                                                    $rowClass = "status-cicilan";
+                                                                                } else {
+                                                                                    $status = "Belum Bayar";
+                                                                                    $rowClass = "status-belum";
+                                                                                }
                                                     ?>
-                                                        <?php foreach ($dataSort as $item): ?>
-                                                            <tr>
-                                                                <td><?= $no++ ?></td>
-                                                                <td><b class="<?= $item['class'] ?>"><?= htmlspecialchars($item['row']['nama']) ?></b></td>
-                                                                <td><?= number_format($item['silua'], 0, ',', '.') ?></td>
-                                                                <td><?= number_format($item['bayar'], 0, ',', '.') ?></td>
-                                                                <td>
-                                                                    <?php if ($item['bayar'] > 0): ?>
-                                                                        <a href="silua_detail.php?id=<?= $item['row']['id'] ?>" target="_blank" class="btn btn-link p-0">Lihat Detail</a>
-                                                                    <?php else: ?>
-                                                                        <span class="text-muted">-</span>
-                                                                    <?php endif; ?>
-                                                                </td>
-                                                                <td><strong><?= $item['status'] ?></strong></td>
-                                                            </tr>
-                                                        <?php endforeach; ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><b class="<?= $rowClass ?>"><?= htmlspecialchars($row['nama']) ?></b></td>
+                                                            <td><?= number_format($silua, 0, ',', '.') ?></td>
+                                                            <td><?= number_format($bayar, 0, ',', '.') ?></td>
+                                                            <td>
+                                                                <?php if ($bayar > 0): ?>
+                                                                    <a href="silua_detail.php?id=<?= $row['id'] ?>" target="_blank" class="btn btn-link p-0">Lihat Detail</a>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted">-</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td><strong><?= $status ?></strong></td>
+                                                        </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
 
-                                                <tfoot class="table-light">
-                                                    <tr>
-                                                        <th colspan="2" class="text-end"><b>Total Keseluruhan:</b></th>
+                                                <tfoot>
+                                                    <tr class="table-info">
+                                                        <td colspan="2" class="text-end"><strong>Total Keseluruhan:</strong></td>
                                                         <td><strong><?= number_format($totalSiluaKategori, 0, ',', '.') ?></strong></td>
                                                         <td><strong><?= number_format($totalKategori, 0, ',', '.') ?></strong></td>
                                                         <th colspan="2"></th>
                                                     </tr>
                                                 </tfoot>
-
 
                                             </table>
                                         </div>
@@ -237,11 +160,7 @@ foreach ($siluas as $s) {
                     </div>
                 </div>
             </div>
-        </main>
-
-        <?php include 'footer.php'; ?>
-    </div>
-
+        </main> <?php include 'footer.php'; ?> </div>
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.12.1/js/jquery.dataTables.min.js"></script>
