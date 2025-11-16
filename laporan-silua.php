@@ -88,9 +88,14 @@ foreach ($siluas as $s) {
                                 <li class="nav-item" role="presentation"> <button class="nav-link" id="boru-tab" data-bs-toggle="tab" data-bs-target="#boru" type="button" role="tab">Boru</button> </li>
                                 <li class="nav-item" role="presentation"> <button class="nav-link" id="bere-tab" data-bs-toggle="tab" data-bs-target="#bere" type="button" role="tab">Bere & Ibebere</button> </li>
                             </ul>
-                            <div class="tab-content" id="myTabContent"> <?php foreach (['hula' => 'Hula-hula', 'boru' => 'Boru', 'bere' => 'Bere & Ibebere'] as $key => $label): ?> <div class="tab-pane fade <?= $key === 'hula' ? 'show active' : '' ?>" id="<?= $key ?>" role="tabpanel">
+                            <div class="tab-content" id="myTabContent">
+
+                                <?php foreach (['hula' => 'Hula-hula', 'boru' => 'Boru', 'bere' => 'Bere & Ibebere'] as $key => $label): ?>
+                                    <div class="tab-pane fade <?= $key === 'hula' ? 'show active' : '' ?>" id="<?= $key ?>" role="tabpanel">
+
                                         <div class="table-responsive">
                                             <table class="table table-bordered table-striped">
+
                                                 <thead class="table-light">
                                                     <tr>
                                                         <th>#</th>
@@ -101,42 +106,53 @@ foreach ($siluas as $s) {
                                                         <th>Status</th>
                                                     </tr>
                                                 </thead>
+
                                                 <tbody>
                                                     <?php
-                                                                            $no = 1;
-                                                                            $totalKategori = 0;
-                                                                            $totalSiluaKategori = 0;
+                                                    $no = 1;
+                                                    $totalKategori = 0;
+                                                    $totalSiluaKategori = 0;
 
-                                                                            foreach ($kelompok[$key] as $row):
-                                                                                $silua = (int)$row['total_silua'];
-                                                                                $bayar = (int)$row['total_bayar'];
+                                                    foreach ($kelompok[$key] as $row):
+                                                        $silua = (int)$row['total_silua'];
+                                                        $bayar = (int)$row['total_bayar'];
 
-                                                                                $totalKategori += $bayar;
-                                                                                $totalSiluaKategori += $silua;
+                                                        $totalKategori += $bayar;
+                                                        $totalSiluaKategori += $silua;
 
-                                                                                if ($bayar >= $silua) {
-                                                                                    $status = "Lunas";
-                                                                                    $rowClass = "status-lunas";
-                                                                                } elseif ($bayar > 0) {
-                                                                                    $status = "Cicilan";
-                                                                                    $rowClass = "status-cicilan";
-                                                                                } else {
-                                                                                    $status = "Belum Bayar";
-                                                                                    $rowClass = "status-belum";
-                                                                                }
+                                                        if ($bayar >= $silua) {
+                                                            $status = "Lunas";
+                                                            $rowClass = "status-lunas";
+                                                        } elseif ($bayar > 0) {
+                                                            $status = "Cicilan";
+                                                            $rowClass = "status-cicilan";
+                                                        } else {
+                                                            $status = "Belum Bayar";
+                                                            $rowClass = "status-belum";
+                                                        }
                                                     ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
-                                                            <td><b class="<?= $rowClass ?>"><?= htmlspecialchars($row['nama']) ?></b></td>
+
+                                                            <td>
+                                                                <b class="<?= $rowClass ?>">
+                                                                    <?= htmlspecialchars($row['nama']) ?>
+                                                                </b>
+                                                            </td>
+
                                                             <td><?= number_format($silua, 0, ',', '.') ?></td>
                                                             <td><?= number_format($bayar, 0, ',', '.') ?></td>
+
                                                             <td>
                                                                 <?php if ($bayar > 0): ?>
-                                                                    <a href="silua_detail.php?id=<?= $row['id'] ?>" target="_blank" class="btn btn-link p-0">Lihat Detail</a>
+                                                                    <a href="silua_detail.php?id=<?= $row['id'] ?>" target="_blank" class="btn btn-link p-0">
+                                                                        Lihat Detail
+                                                                    </a>
                                                                 <?php else: ?>
                                                                     <span class="text-muted">-</span>
                                                                 <?php endif; ?>
                                                             </td>
+
                                                             <td><strong><?= $status ?></strong></td>
                                                         </tr>
                                                     <?php endforeach; ?>
@@ -144,18 +160,30 @@ foreach ($siluas as $s) {
 
                                                 <tfoot>
                                                     <tr class="table-info">
-                                                        <td colspan="2" class="text-end"><strong>Total Keseluruhan:</strong></td>
-                                                        <td><strong><?= number_format($totalSiluaKategori, 0, ',', '.') ?></strong></td>
-                                                        <td><strong><?= number_format($totalKategori, 0, ',', '.') ?></strong></td>
-                                                        <th colspan="2"></th>
+                                                        <td colspan="2" class="text-end">
+                                                            <strong>Total Keseluruhan:</strong>
+                                                        </td>
+
+                                                        <td>
+                                                            <strong><?= number_format($totalSiluaKategori, 0, ',', '.') ?></strong>
+                                                        </td>
+
+                                                        <td>
+                                                            <strong><?= number_format($totalKategori, 0, ',', '.') ?></strong>
+                                                        </td>
+
+                                                        <td colspan="2"></td>
                                                     </tr>
                                                 </tfoot>
 
                                             </table>
                                         </div>
+
                                     </div>
                                 <?php endforeach; ?>
+
                             </div>
+
                         </div>
                     </div>
                 </div>
