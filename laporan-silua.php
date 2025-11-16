@@ -152,12 +152,23 @@ foreach ($siluas as $s) {
                                                 </thead>
                                                 <tbody>
                                                     <?php
+                                                    // Hitung total per kategori
                                                     $no = 1;
                                                     $totalKategori = 0;
+                                                    $totalSiluaKategori = 0;
+
+                                                    // Siapkan array untuk sortir berdasarkan status
+                                                    $dataSort = [];
+
+                                                    // Tentukan urutan status
+                                                    $statusOrder = [
+                                                        'Lunas' => 1,
+                                                        'Cicilan' => 2,
+                                                        'Belum Bayar' => 3
+                                                    ];
                                                     foreach ($kelompok[$key] as $row):
                                                         $silua = (int)$row['total_silua'];
                                                         $bayar = (int)$row['total_bayar'];
-                                                        $totalKategori += $bayar;
 
                                                         if ($bayar >= $silua) {
                                                             $status = "Lunas";
@@ -169,29 +180,54 @@ foreach ($siluas as $s) {
                                                             $status = "Belum Bayar";
                                                             $rowClass = "status-belum";
                                                         }
+
+                                                        // Masukkan ke array untuk disort
+                                                        $dataSort[] = [
+                                                            'row' => $row,
+                                                            'silua' => $silua,
+                                                            'bayar' => $bayar,
+                                                            'status' => $status,
+                                                            'class' => $rowClass,
+                                                            'order' => $statusOrder[$status]
+                                                        ];
+
+                                                        // Hitung total
+                                                        $totalKategori += $bayar;
+                                                        $totalSiluaKategori += $silua;
+                                                        // Sortir berdasarkan status
+                                                        usort($dataSort, function ($a, $b) {
+                                                            return $a['order'] <=> $b['order'];
+                                                        });
                                                     ?>
-                                                        <tr>
-                                                            <td><?= $no++ ?></td>
-                                                            <td><b class="<?= $rowClass ?>"><?= htmlspecialchars($row['nama']) ?></b></td>
-                                                            <td><?= number_format($silua, 0, ',', '.') ?></td>
-                                                            <td><?= number_format($bayar, 0, ',', '.') ?></td>
-                                                            <td>
-                                                                <?php if ($bayar > 0): ?>
-                                                                    <a href="silua_detail.php?id=<?= $row['id'] ?>" target="_blank" class="btn btn-link p-0">Lihat Detail</a>
-                                                                <?php else: ?>
-                                                                    <span class="text-muted">-</span>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td><strong><?= $status ?></strong></td>
-                                                        </tr>
+                                                        <?php foreach ($dataSort as $item): ?>
+                                                            <tr>
+                                                                <td><?= $no++ ?></td>
+                                                                <td><b class="<?= $item['class'] ?>"><?= htmlspecialchars($item['row']['nama']) ?></b></td>
+                                                                <td><?= number_format($item['silua'], 0, ',', '.') ?></td>
+                                                                <td><?= number_format($item['bayar'], 0, ',', '.') ?></td>
+                                                                <td>
+                                                                    <?php if ($item['bayar'] > 0): ?>
+                                                                        <a href="silua_detail.php?id=<?= $item['row']['id'] ?>" target="_blank" class="btn btn-link p-0">Lihat Detail</a>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">-</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td><strong><?= $item['status'] ?></strong></td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
                                                     <?php endforeach; ?>
                                                 </tbody>
-                                                <tfoot>
-                                                    <tr class="table-info">
-                                                        <td colspan="3" class="text-end"><strong>Total Keseluruhan:</strong></td>
-                                                        <td colspan="3"><strong><?= number_format($totalKategori, 0, ',', '.') ?></strong></td>
+
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <th colspan="2" class="text-end"><b>Total Keseluruhan:</b></th>
+                                                        <td><strong><?= number_format($totalSiluaKategori, 0, ',', '.') ?></strong></td>
+                                                        <td><strong><?= number_format($totalKategori, 0, ',', '.') ?></strong></td>
+                                                        <th colspan="2"></th>
                                                     </tr>
                                                 </tfoot>
+
+
                                             </table>
                                         </div>
                                     </div>

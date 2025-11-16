@@ -8,7 +8,7 @@ $stmt = $pdo->query("
         a.nama,
         COALESCE(SUM(oi.qty),0) AS total_qty,
         (COALESCE(SUM(oi.qty),0) * 100000) AS total_pesanan,
-        GROUP_CONCAT(CONCAT(oi.size, ' x', oi.qty) SEPARATOR ', ') AS pesanan,
+        GROUP_CONCAT(CONCAT(oi.qty,oi.size) SEPARATOR ', ') AS pesanan,
         COALESCE(bb_tot.total_bayar, 0) AS total_bayar
     FROM anggota a
     JOIN order_items oi ON oi.order_id = a.id

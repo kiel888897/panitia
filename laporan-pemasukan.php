@@ -202,28 +202,28 @@ if (!isset($_SESSION['admin_id'])) {
 <tbody>
 <tr>
   <td class='text-center'>1</td>
-  <td>Toktok Ripe ({$jumlahAnggota} KK)</td>
+  <td><a target='_blank' href='laporan-toktok.php'>Toktok Ripe ({$jumlahAnggota} KK) </a></td>
   <td class='text-end'>" . number_format($jumlahToktok, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($totalToktok, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($piutangToktok, 0, ',', '.') . "</td>
 </tr>
 <tr>
   <td class='text-center'>2</td>
-  <td>Sukarela</td>
+  <td><a target='_blank' href='laporan-toktok.php'>Sukarela </a></td>
   <td class='text-end'>" . number_format($totalSukarela, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($totalSukarela, 0, ',', '.') . "</td>
   <td class='text-end'>-</td>
 </tr>
 <tr>
   <td class='text-center'>3</td>
-  <td>Baju PTS</td>
+  <td><a target='_blank' href='laporan-baju.php'>Baju PTS</a></td>
   <td class='text-end'>" . number_format($totalPesanan, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($totalBayarBaju, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($piutangBaju, 0, ',', '.') . "</td>
 </tr>
 <tr>
   <td class='text-center'>4</td>
-  <td>Kupon Bajar KFC PTS</td>
+  <td><a target='_blank' href='laporan_kupon.php'>Kupon Bajar KFC PTS</a></td>
   <td class='text-end'>" . number_format($totalTagihanKupon, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($totalBayarKupon, 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($piutangKupon, 0, ',', '.') . "</td>
@@ -238,7 +238,7 @@ if (!isset($_SESSION['admin_id'])) {
                                 echo "
 <tr>
   <td class='text-center'>{$no}</td>
-  <td>{$v['label']}</td>
+  <td><a target='_blank' href='laporan-silua.php'>{$v['label']}</a></td>
   <td class='text-end'>" . number_format($v['total_silua'], 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($v['total_bayar'], 0, ',', '.') . "</td>
   <td class='text-end'>" . number_format($piutang, 0, ',', '.') . "</td>
@@ -250,24 +250,38 @@ if (!isset($_SESSION['admin_id'])) {
 
                             // === Tambahkan baris sumbangan dinamis ===
                             $totalJumlahSumbangan = 0;
+
                             if (!empty($sumbangan)) {
                                 foreach ($sumbangan as $row) {
-                                    $jenis = ucfirst($row['jenis']);
+
+                                    $jenis = strtolower($row['jenis']);
+                                    $jenisUc = ucfirst($jenis);
                                     $nama = htmlspecialchars($row['nama']);
                                     $jumlah = (int)$row['jumlah'];
                                     $totalJumlahSumbangan += $jumlah;
 
+                                    // Tentukan link berdasarkan jenis
+                                    if ($jenis == 'tor-tor') {
+                                        $link = 'laporan-tor-tor.php';
+                                    } elseif ($jenis == 'dana') {
+                                        $link = 'laporan-sumbangan-dana.php';
+                                    } else {
+                                        $link = '#'; // default / bisa disesuaikan
+                                    }
+
                                     echo "
-<tr>
-  <td class='text-center'>{$no}</td>
-  <td>{$jenis} ({$nama})</td>
-  <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
-  <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
-  <td class='text-end'>0</td>
-</tr>";
+                                        <tr>
+                                        <td class='text-center'>{$no}</td>
+                                        <td><a target='_blank' href='{$link}'>{$jenisUc} ({$nama})</a></td>
+                                        <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
+                                        <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
+                                        <td class='text-end'>0</td>
+                                        </tr>";
+
                                     $no++;
                                 }
                             }
+
 
                             // === TOTAL KESELURUHAN ===
                             $totalJumlah = $jumlahToktok + $totalSukarela + $totalPesanan + $totalTagihanKupon + $grandSilua + $totalJumlahSumbangan;

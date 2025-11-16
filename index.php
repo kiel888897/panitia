@@ -86,6 +86,8 @@ $queryPengeluaran = "SELECT IFNULL(SUM(jumlah), 0) AS total_pengeluaran FROM pen
 $stmt2 = $pdo->query($queryPengeluaran);
 $total2 = $stmt2->fetch(PDO::FETCH_ASSOC);
 $total_pengeluaran = $total2['total_pengeluaran'];
+$saldo = $total_pemasukan - $total_pengeluaran;
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -137,6 +139,22 @@ $total_pengeluaran = $total2['total_pengeluaran'];
     href="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.css"
     integrity="sha256-4MX+61mt9NVvvuPjUWdUdyfZfxSB1/Rf9WtqRHgG5S0="
     crossorigin="anonymous" />
+  <style>
+    .card-hover {
+      transition: all 0.25s ease-in-out;
+      cursor: pointer;
+    }
+
+    .card-hover:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .card-hover:active {
+      transform: scale(0.97);
+    }
+  </style>
+
 </head>
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
@@ -169,50 +187,72 @@ $total_pengeluaran = $total2['total_pengeluaran'];
       <div class="container-fluid">
 
         <div class="row g-4">
-          <!-- CARD PEMASUKAN -->
-          <div class="col-md-6">
-            <div class="card border-0 shadow-sm" style="border-left: 5px solid #28a745;">
+          <!-- CARD SALDO -->
+          <div class="col-md-12">
+            <div class="card border-0 shadow-sm" style="border-left: 5px solid #0d6efd;">
               <div class="card-body d-flex align-items-center">
                 <div class="flex-shrink-0 me-3">
-                  <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
-                    <i class="bi bi-graph-up-arrow fs-2"></i>
+                  <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 70px; height: 70px;">
+                    <i class="bi bi-wallet2 fs-2"></i>
                   </div>
                 </div>
                 <div>
-
-                  <div>
-                    <h4 class=" text-secondary mb-1">Total Pemasukan</h4>
-                  </div>
-                  <div class="align-items-baseline">
-                    <h3 class="fw-bold text-success mb-0" style="line-height: 1;"> Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></h3>
-                  </div>
-                  <small class="text-muted">Sampai saat ini</small>
+                  <h4 class="text-secondary mb-1">Saldo Saat Ini</h4>
+                  <h3 class="fw-bold text-primary mb-0" style="line-height: 1;">
+                    Rp <?= number_format($saldo, 0, ',', '.') ?>
+                  </h3>
+                  <small class="text-muted">Total pemasukan dikurangi total pengeluaran</small>
                 </div>
               </div>
             </div>
+          </div>
+          <!-- CARD PEMASUKAN -->
+          <div class="col-md-6">
+            <a href="laporan-pemasukan.php" class="text-decoration-none">
+              <div class="card border-0 shadow-sm card-hover" style="border-left: 5px solid #28a745;">
+                <div class="card-body d-flex align-items-center">
+                  <div class="flex-shrink-0 me-3">
+                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center"
+                      style="width: 70px; height: 70px;">
+                      <i class="bi bi-graph-up-arrow fs-2"></i>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 class="text-secondary mb-1">Total Pemasukan</h4>
+                    <h3 class="fw-bold text-success mb-0" style="line-height: 1;">
+                      Rp <?= number_format($total_pemasukan, 0, ',', '.') ?>
+                    </h3>
+                    <small class="text-muted">Klik untuk lihat detail</small>
+                  </div>
+                </div>
+              </div>
+            </a>
           </div>
 
           <!-- CARD PENGELUARAN -->
           <div class="col-md-6">
-            <div class="card border-0 shadow-sm" style="border-left: 5px solid #dc3545;">
-              <div class="card-body d-flex align-items-center">
-                <div class="flex-shrink-0 me-3">
-                  <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
-                    <i class="bi bi-cash-stack fs-2"></i>
+            <a href="laporan-pengeluaran.php" class="text-decoration-none">
+              <div class="card border-0 shadow-sm card-hover" style="border-left: 5px solid #dc3545;">
+                <div class="card-body d-flex align-items-center">
+                  <div class="flex-shrink-0 me-3">
+                    <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center"
+                      style="width: 70px; height: 70px;">
+                      <i class="bi bi-cash-stack fs-2"></i>
+                    </div>
                   </div>
-                </div>
-                <div>
                   <div>
-                    <h4 class=" text-secondary mb-1">Total Pengeluaran</h4>
+                    <h4 class="text-secondary mb-1">Total Pengeluaran</h4>
+                    <h3 class="fw-bold text-danger mb-0" style="line-height: 1;">
+                      Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?>
+                    </h3>
+                    <small class="text-muted">Klik untuk lihat detail</small>
                   </div>
-                  <div class="align-items-baseline">
-                    <h3 class="fw-bold text-danger mb-0" style="line-height: 1;">Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></h3>
-                  </div>
-                  <small class="text-muted">Sampai saat ini</small>
                 </div>
               </div>
-            </div>
+            </a>
           </div>
+
         </div>
 
       </div>

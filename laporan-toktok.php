@@ -20,7 +20,13 @@ $stmt = $pdo->query("
     FROM anggotas a
     LEFT JOIN iuran i ON a.id = i.anggota_id
     GROUP BY a.id, a.nama, a.jabatan
-    ORDER BY a.nama ASC
+    ORDER BY 
+        CASE 
+            WHEN COALESCE(SUM(i.toktok),0) >= 250000 THEN 1
+            WHEN COALESCE(SUM(i.toktok),0) > 0 THEN 2
+            ELSE 3
+        END,
+        a.nama ASC
 ");
 $anggotaList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -108,10 +114,16 @@ $anggotaList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <tbody>
                                     <?php
                                     $i = 1;
+                                    $totalToktokAll = 0;
+                                    $totalSukarelaAll = 0;
+
                                     foreach ($anggotaList as $row):
                                         $toktokRipe = 250000;
                                         $totalToktok = (int)$row['total_toktok'];
                                         $totalSukarela = (int)$row['total_sukarela'];
+
+                                        $totalToktokAll += (int)$row['total_toktok'];
+                                        $totalSukarelaAll += (int)$row['total_sukarela'];
 
                                         // Tentukan status
                                         if ($totalToktok >= $toktokRipe) {
@@ -125,6 +137,8 @@ $anggotaList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             $rowClass = "status-belum";
                                         }
                                     ?>
+
+
                                         <tr>
                                             <td><?= $i++ ?></td>
                                             <td>
@@ -145,6 +159,16 @@ $anggotaList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
+                                <tfoot>
+                                    <tr class="table-info fw-bold">
+                                        <td colspan="2" class="text-end">TOTAL</td>
+                                        <td><?= number_format(250000 * count($anggotaList), 0, ',', '.') ?></td>
+                                        <td><?= number_format($totalSukarelaAll, 0, ',', '.') ?></td>
+                                        <td><?= number_format($totalToktokAll, 0, ',', '.') ?></td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+
                             </table>
                         </div>
                     </div>

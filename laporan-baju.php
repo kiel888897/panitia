@@ -16,7 +16,7 @@ $stmt = $pdo->query("
         a.alamat,
         COALESCE(SUM(oi.qty),0) AS total_qty,
         (COALESCE(SUM(oi.qty),0) * 100000) AS total_pesanan,
-        GROUP_CONCAT(CONCAT(oi.size, ' x', oi.qty) SEPARATOR ', ') AS pesanan,
+        GROUP_CONCAT(CONCAT(oi.qty,oi.size) SEPARATOR ', ') AS pesanan,
         COALESCE(bb_tot.total_bayar, 0) AS total_bayar
     FROM anggota a
     JOIN order_items oi ON oi.order_id = a.id
@@ -26,8 +26,15 @@ $stmt = $pdo->query("
         GROUP BY anggota_id
     ) bb_tot ON bb_tot.anggota_id = a.id
     GROUP BY a.id
-    ORDER BY a.nama ASC
+    ORDER BY 
+        CASE
+            WHEN COALESCE(bb_tot.total_bayar,0) >= (COALESCE(SUM(oi.qty),0) * 100000) THEN 1
+            WHEN COALESCE(bb_tot.total_bayar,0) > 0 THEN 2
+            ELSE 3
+        END,
+        a.nama ASC
 ");
+
 $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
@@ -107,6 +114,7 @@ $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <th>#</th>
                                         <th>Nama</th>
                                         <th>Pesanan</th>
+                                        <th>Total Qty</th>
                                         <th>Total Pesanan (Rp)</th>
                                         <th>Total Pembayaran (Rp)</th>
                                         <th>Keterangan</th>
@@ -116,9 +124,17 @@ $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <tbody>
                                     <?php
                                     $i = 1;
+
+                                    $totalQtyAll = 0;
+                                    $totalPesananAll = 0;
+                                    $totalBayarAll = 0;
                                     $rowClass = ''; // definisikan supaya tidak undefined
 
                                     foreach ($bajus as $row):
+                                        $totalQtyAll += (int)$row['total_qty'];
+                                        $totalPesananAll += (int)$row['total_pesanan'];
+                                        $totalBayarAll += (int)$row['total_bayar'];
+
                                         if ($row['total_bayar'] >= $row['total_pesanan']) {
                                             $status = "Lunas";
                                             $rowClass = "status-lunas";
@@ -140,13 +156,13 @@ $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             <td>
                                                 <?php
                                                 // Tambahkan warna abu pada tanda ×
-                                                $pesanan = str_replace('×', '<span style="color:#198754;">×</span>', $row['pesanan']);
+                                                $pesanan = str_replace('@', '<span style="color:#198754;">@</span>', $row['pesanan']);
 
                                                 // Jika kosong, tampilkan tanda "-"
                                                 echo $pesanan ? $pesanan : '-';
                                                 ?>
-                                                <div><small>• Total qty: <?= (int)$row['total_qty'] ?></small></div>
                                             </td>
+                                            <td><?= (int)$row['total_qty'] ?></td>
 
                                             <td>Rp <?= number_format($row['total_pesanan'], 0, ',', '.') ?></td>
                                             <!-- Tidak ada kolom harga di order_items; tampilkan '-' atau ubah bila sudah ada harga -->
@@ -164,6 +180,16 @@ $bajus = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="3" class="text-end"><b>Total Semua:</b></th>
+                                        <th><b><?= $totalQtyAll ?></b></th>
+                                        <th><b>Rp <?= number_format($totalPesananAll, 0, ',', '.') ?></b></th>
+                                        <th><b>Rp <?= number_format($totalBayarAll, 0, ',', '.') ?></b></th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+
                             </table>
                         </div>
                     </div>

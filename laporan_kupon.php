@@ -22,8 +22,15 @@ $stmt = $pdo->query("
     FROM kupon k
     LEFT JOIN bayar_kupon bk ON k.id = bk.id_kupon
     GROUP BY k.id, k.nama, k.nomor_kupon, k.jumlah, k.kembali
-    ORDER BY k.nama ASC
+    ORDER BY 
+        CASE
+            WHEN COALESCE(SUM(bk.bayar),0) >= ((k.jumlah - k.kembali) * 50000) THEN 1
+            WHEN COALESCE(SUM(bk.bayar),0) > 0 THEN 2
+            ELSE 3
+        END,
+        k.nama ASC
 ");
+
 $kupons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
@@ -126,7 +133,16 @@ $kupons = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <tbody>
                                     <?php
                                     $i = 1;
+                                    $totalJumlah = 0;
+                                    $totalKembali = 0;
+                                    $totalTagihan = 0;
+                                    $totalBayar = 0;
                                     foreach ($kupons as $row):
+                                        // Hitung total keseluruhan
+                                        $totalJumlah += $row['jumlah_kupon'];
+                                        $totalKembali += $row['kembali_kupon'];
+                                        $totalTagihan += $row['total_tagihan'];
+                                        $totalBayar += $row['total_bayar'];
                                         if ($row['total_bayar'] >= $row['total_tagihan']) {
                                             $status = "Lunas";
                                             $rowClass = "status-lunas";
@@ -157,18 +173,17 @@ $kupons = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
-                                <tfoot>
+                                <tfoot class="table-light">
                                     <tr>
-                                        <th colspan="5" class="text-end">Total Keseluruhan:</th>
-                                        <th>
-                                            Rp <?= number_format(array_sum(array_column($kupons, 'total_tagihan')), 0, ',', '.') ?>
-                                        </th>
-                                        <th>
-                                            Rp <?= number_format(array_sum(array_column($kupons, 'total_bayar')), 0, ',', '.') ?>
-                                        </th>
-                                        <th colspan="3"></th>
+                                        <th colspan="3" class="text-end"><b>Total Keseluruhan:</b></th>
+                                        <th><b><?= $totalJumlah ?></b></th>
+                                        <th><b><?= $totalKembali ?></b></th>
+                                        <th><b>Rp <?= number_format($totalTagihan, 0, ',', '.') ?></b></th>
+                                        <th><b>Rp <?= number_format($totalBayar, 0, ',', '.') ?></b></th>
+                                        <th colspan="2"></th>
                                     </tr>
                                 </tfoot>
+
                             </table>
                         </div>
                     </div>
