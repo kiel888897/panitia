@@ -328,7 +328,7 @@
                 </li>
                 <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
                     <li class="nav-item">
-                        <a href="anggota.php" class="nav-link">
+                        <a href="anggota.php" class="nav-link <?php if ($menu === 'anggota') echo 'active'; ?>">
                             <i class="nav-icon bi bi-person-fill"></i>
                             <p>Anggota</p>
                         </a>

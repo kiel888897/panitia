@@ -1,5 +1,5 @@
 <?php
-$menu = 'baju';
+$menu = 'anggota';
 session_start();
 require_once 'db.php';
 
