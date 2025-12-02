@@ -9,7 +9,7 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
-$seksi = $_SESSION['role_id'] ?? null;
+$role = $_SESSION['role_id'] ?? null;
 $error = '';
 $success = '';
 // helper: buat slug sederhana untuk nama file
@@ -26,8 +26,16 @@ function slugify($text)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tanggal = $_POST['tanggal'] ?? date('Y-m-d');
     $nama = trim($_POST['nama'] ?? '');
+    $pen = $_POST['seksi'] ?? 2;
     $keterangan = trim($_POST['keterangan'] ?? '');
     $jumlah = (float)($_POST['jumlah'] ?? 0);
+
+    if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) {
+        $seksi = $_POST['seksi'];
+    } else {
+        $seksi = $role; // gunakan seksi dari session jika bukan admin/bendahara
+    }
+
 
     $notaFileName = '';
     $bayarFileName = '';
@@ -236,6 +244,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <label class="form-label">Jumlah (Rp)</label>
                                                 <input type="number" name="jumlah" class="form-control" min="0" required>
                                             </div>
+                                            <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Seksi</label>
+                                                    <select name="seksi" class="form-select">
+                                                        <option value="2">Bendahara</option>
+                                                        <option value="3">Acara</option>
+                                                        <option value="4">Dana</option>
+                                                        <option value="5">Perlengkapan</option>
+                                                        <option value="6">Konsumsi</option>
+                                                    </select>
+                                                </div>
+
+                                            <?php } ?>
                                             <div class="col-12">
                                                 <label class="form-label">Keterangan</label>
                                                 <textarea id="keterangan" name="keterangan" class="form-control" required></textarea>

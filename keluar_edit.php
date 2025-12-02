@@ -54,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $keterangan = $_POST['keterangan'] ?? '';
     $jumlah = (float)($_POST['jumlah'] ?? 0);
 
+    if ($role == 1 || $role == 2) {
+        $seksi = $_POST['seksi'];
+    } else {
+        $seksi = $role; // gunakan seksi dari session jika bukan admin/bendahara
+    }
+
     $notaOld = $peng['nota'] ?? '';
     $bayarOld = $peng['bayar'] ?? '';
     $notaFile = $notaOld;
@@ -124,12 +130,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmtUpd = $pdo->prepare("
                 UPDATE pengeluaran
-                SET tanggal = ?, nama = ?, keterangan = ?, jumlah = ?, nota = ?, bayar = ?
+                SET tanggal = ?, nama = ?, seksi = ?, keterangan = ?, jumlah = ?, nota = ?, bayar = ?
                 WHERE id = ?
             ");
             $stmtUpd->execute([
                 $tanggal,
                 $nama,
+                $seksi,
                 $keterangan,
                 $jumlah,
                 $notaFile,
@@ -230,7 +237,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <input type="number" name="jumlah" class="form-control" min="0" value="<?= htmlspecialchars($peng['jumlah'] ?? 0) ?>" required>
 
                                     </div>
+                                    <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2) { ?>
 
+                                        <div class="col-md-6">
+                                            <label class="form-label">Seksi</label>
+                                            <select name="seksi" class="form-select">
+                                                <option value="2" <?= ((int)($peng['seksi'] ?? 0) === 2) ? 'selected' : '' ?>>Bendahara</option>
+                                                <option value="3" <?= ((int)($peng['seksi'] ?? 0) === 3) ? 'selected' : '' ?>>Acara</option>
+                                                <option value="4" <?= ((int)($peng['seksi'] ?? 0) === 4) ? 'selected' : '' ?>>Dana</option>
+                                                <option value="5" <?= ((int)($peng['seksi'] ?? 0) === 5) ? 'selected' : '' ?>>Perlengkapan</option>
+                                                <option value="6" <?= ((int)($peng['seksi'] ?? 0) === 6) ? 'selected' : '' ?>>Konsumsi</option>
+                                            </select>
+                                        </div>
+
+                                    <?php } ?>
                                     <div class=" col-12">
                                         <label class="form-label">Keterangan</label>
                                         <textarea name="keterangan" id="keterangan" class="form-control"><?= htmlspecialchars($peng['keterangan'] ?? '') ?></textarea>
