@@ -133,28 +133,19 @@ if (!isset($_SESSION['admin_id'])) {
                             $piutangBaju = $totalPesanan - $totalBayarBaju;
 
 
-                            // === 3. KUPON PTS (FIXED) ===
+                            // === 3. KUPON PTS ===
                             $stmt3 = $pdo->query("
-    SELECT
-        COALESCE(SUM(t.total_tagihan), 0) AS total_tagihan,
-        COALESCE(SUM(t.total_bayar), 0) AS total_bayar
-    FROM (
-        SELECT
-            k.id,
-            (k.jumlah - k.kembali) * 50000 AS total_tagihan,
-            COALESCE(SUM(bk.bayar), 0) AS total_bayar
-        FROM kupon k
-        LEFT JOIN bayar_kupon bk ON k.id = bk.id_kupon
-        GROUP BY k.id, k.jumlah, k.kembali
-    ) t
+    SELECT 
+        COALESCE(SUM((k.jumlah - k.kembali) * 50000), 0) AS total_tagihan,
+        COALESCE(SUM(bk.bayar), 0) AS total_bayar
+    FROM kupon k
+    LEFT JOIN bayar_kupon bk ON k.id = bk.id_kupon
 ");
-
                             $kupon = $stmt3->fetch(PDO::FETCH_ASSOC);
 
-                            $totalTagihanKupon = (int) $kupon['total_tagihan'];
-                            $totalBayarKupon   = (int) $kupon['total_bayar'];
-                            $piutangKupon      = $totalTagihanKupon - $totalBayarKupon;
-
+                            $totalTagihanKupon = (int)$kupon['total_tagihan'];
+                            $totalBayarKupon = (int)$kupon['total_bayar'];
+                            $piutangKupon = $totalTagihanKupon - $totalBayarKupon;
 
 
                             // === 4. SILUA PER KELOMPOK ===
