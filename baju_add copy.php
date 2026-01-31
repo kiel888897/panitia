@@ -13,30 +13,17 @@ $success = '';
 
 // Ambil hanya anggota yang punya order_items
 $anggotaStmt = $pdo->query("
-   SELECT 
-    a.id,
-    a.nama,
-
-    COALESCE(t.tagihan, 0) AS total_tagihan,
-    COALESCE(b.bayar, 0)   AS total_bayar
-
-FROM anggota a
-
-LEFT JOIN (
-    SELECT order_id, SUM(qty * 100000) AS tagihan
-    FROM order_items
-    GROUP BY order_id
-) t ON t.order_id = a.id
-
-LEFT JOIN (
-    SELECT anggota_id, SUM(jumlah) AS bayar
-    FROM bayar_baju
-    GROUP BY anggota_id
-) b ON b.anggota_id = a.id
-
-WHERE COALESCE(b.bayar, 0) < COALESCE(t.tagihan, 0)
-
-ORDER BY a.nama ASC
+    SELECT 
+        a.id,
+        a.nama,
+        COALESCE(SUM(oi.qty * 100000), 0) AS total_tagihan,
+        COALESCE(SUM(bb.jumlah), 0) AS total_bayar
+    FROM anggota a
+    LEFT JOIN order_items oi ON oi.order_id = a.id
+    LEFT JOIN bayar_baju bb ON bb.anggota_id = a.id
+    GROUP BY a.id, a.nama
+    HAVING total_bayar < total_tagihan
+    ORDER BY a.nama ASC
 ");
 $anggotas = $anggotaStmt->fetchAll(PDO::FETCH_ASSOC);
 
