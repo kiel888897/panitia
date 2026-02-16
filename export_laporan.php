@@ -112,24 +112,70 @@ function tanggal_indo($tgl = null)
                 font-size: 12px;
             }
         }
+
+        .ttd-wrapper {
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        .ttd-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .ttd-subtitle {
+            margin-bottom: 40px;
+        }
+
+        .ttd-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+
+        .ttd-col {
+            width: 32%;
+            text-align: center;
+        }
+
+        .ttd-space {
+            height: 80px;
+            /* jarak tanda tangan */
+        }
+
+        .ttd-name {
+            margin-top: 10px;
+        }
+
+        .ttd-line {
+            display: inline-block;
+            border-bottom: 1px dotted #000;
+            width: 200px;
+            margin-top: 60px;
+            padding: 5px;
+        }
+
+        @media print {
+            .ttd-wrapper {
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
 
 <body class="p-4">
     <div class="container-fluid">
-        <div class="page-keep-together mb-4">
-            <h2 class="text-center mb-1">Rekap Laporan Dana</h2>
-            <h2 class="text-center mb-1">Bona Taon 2026 PTS Bali</h2>
-
+        <div class="page-keep-together">
+            <h1 class="text-center mb-1">Rekap Laporan Dana</h1>
+            <h2 class="text-center mb-1">Bona Taon Punguan Tuan Sihubil</h2>
+            <h2 class="text-center mb-1">Boru, Bere, Ibebere se-bali 2026 </h2>
             <p class="text-center"><i><?= 'Tanggal: ' . tanggal_indo() ?></i></p>
 
-            <div class="text-center mb-3 no-print">
+            <div class="text-center no-print">
                 <button id="printPDF" class="btn btn-danger">
                     <i class="bi bi-printer"></i> Cetak / Simpan PDF
                 </button>
             </div>
-
-
         </div>
         <?php
 
@@ -141,6 +187,7 @@ function tanggal_indo($tgl = null)
 SELECT 
     IFNULL((SELECT SUM(toktok + sukarela) FROM iuran), 0) +
     IFNULL((SELECT SUM(jumlah) FROM sumbangan WHERE jenis = 'dana'), 0) +
+    IFNULL((SELECT SUM(jumlah) FROM sumbangan WHERE jenis = 'kotak-sumbangan'), 0) +
     IFNULL((SELECT SUM(jumlah) FROM sumbangan WHERE jenis = 'tor-tor'), 0) +
     IFNULL((SELECT SUM(bayar) FROM bayar_kupon), 0) +
     IFNULL((SELECT SUM(jumlah) FROM bayar_baju), 0) +
@@ -164,18 +211,43 @@ SELECT
         // =======================================================
         ?>
 
-        <div class="mb-4 p-4 rounded shadow-sm">
+        <div class="mb-4 rounded shadow-sm">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body text-center">
 
-            <div class="row text-center mt-3 text-primary">
-                <h4 class="mb-1">SALDO AKHIR</h4>
-                <h2 class="fw-bold mb-2">
-                    Rp <?= number_format($saldo, 0, ',', '.') ?>
-                </h2>
+                            <h5 class="text-muted mb-3">SALDO AKHIR</h5>
+
+                            <div class="mb-2">
+                                <span class="text-secondary">Tunai</span>
+                                <h4 class="fw-bold text-success">
+                                    Rp <?= number_format($saldo, 0, ',', '.') ?>
+                                </h4>
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="text-secondary">Piutang</span>
+                                <h4 class="fw-bold text-warning">
+                                    Rp 21.850.000
+                                </h4>
+                            </div>
+
+                            <hr>
+
+                            <h3 class="fw-bold text-primary">
+                                Total: Rp <?= number_format($saldo + 21850000, 0, ',', '.') ?>
+                            </h3>
+
+                        </div>
+                    </div>
+                </div>
             </div>
+
             <hr>
             <div class="row text-center mt-3">
                 <div class="col-md-6 text-success">
-                    <div class="fw-bold">Total Pemasukan</div>
+                    <div class="fw-bold">Total Pemasukan (Tunai)</div>
                     <div>Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></div>
                 </div>
                 <div class="col-md-6 text-danger">
@@ -185,7 +257,7 @@ SELECT
             </div>
         </div>
 
-        <h3 class='mt-3 text-success'>1. Laporan Pemasukan</h3>
+        <h3 class='mt-3 text-success'>1. Laporan Pemasukan Dana Bona Taon</h3>
 
         <?php
 
@@ -234,9 +306,13 @@ SELECT
 
         // === 3. KUPON PTS ===
         $stmt3 = $pdo->query("
-    SELECT 
-        COALESCE(SUM((k.jumlah - k.kembali) * 50000), 0) AS total_tagihan,
-        COALESCE(SUM(bk.bayar), 0) AS total_bayar
+   SELECT 
+    (SELECT COALESCE(SUM((jumlah - kembali) * 50000), 0) FROM kupon) 
+    AS total_tagihan,
+    
+    (SELECT COALESCE(SUM(bayar), 0) FROM bayar_kupon) 
+    AS total_bayar
+
     FROM kupon k
     LEFT JOIN bayar_kupon bk ON k.id = bk.id_kupon
 ");
@@ -281,7 +357,7 @@ SELECT
         nama,
         COALESCE(jumlah, 0) AS jumlah
     FROM sumbangan
-    WHERE jenis IN ('dana', 'tor-tor')
+    WHERE jenis IN ('dana', 'tor-tor', 'kotak-sumbangan')
     ORDER BY jenis, tanggal DESC
 ");
         $sumbangan = $stmt5->fetchAll(PDO::FETCH_ASSOC);
@@ -347,26 +423,80 @@ SELECT
             $grandBayarSilua += $v['total_bayar'];
         }
 
-        // === Tambahkan baris sumbangan dinamis ===
+        // === Tambahkan baris sumbangan ===
         $totalJumlahSumbangan = 0;
+        $totalDana = 0;
+        $totalKotak = 0;
+        $torTorList = [];
+
         if (!empty($sumbangan)) {
+
             foreach ($sumbangan as $row) {
-                $jenis = ucfirst($row['jenis']);
+
+                $jenis = strtolower(trim($row['jenis']));
                 $nama = htmlspecialchars($row['nama']);
                 $jumlah = (int)$row['jumlah'];
-                $totalJumlahSumbangan += $jumlah;
 
-                echo "
-<tr>
-  <td class='text-center'>{$no}</td>
-  <td>{$jenis} ({$nama})</td>
-  <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
-  <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
-  <td class='text-end'>0</td>
-</tr>";
-                $no++;
+                if ($jenis === 'dana') {
+                    $totalDana += $jumlah;
+                } elseif ($jenis === 'kotak-sumbangan') {
+                    $totalKotak += $jumlah;
+                } elseif ($jenis === 'tor-tor') {
+                    $torTorList[] = [
+                        'nama' => $nama,
+                        'jumlah' => $jumlah
+                    ];
+                }
+
+                $totalJumlahSumbangan += $jumlah;
             }
         }
+
+        //
+        // === TAMPILKAN TOTAL DANA (1 BARIS) ===
+        //
+        if ($totalDana > 0) {
+            echo "
+<tr>
+  <td class='text-center'>{$no}</td>
+  <td>Sumbangan Dana</td>
+  <td class='text-end'>" . number_format($totalDana, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalDana, 0, ',', '.') . "</td>
+  <td class='text-end'>0</td>
+</tr>";
+            $no++;
+        }
+
+        //
+        // === TAMPILKAN TOTAL KOTAK SUMBANGAN (1 BARIS) ===
+        //
+        if ($totalKotak > 0) {
+            echo "
+<tr>
+  <td class='text-center'>{$no}</td>
+  <td>Kotak Sumbangan</td>
+  <td class='text-end'>" . number_format($totalKotak, 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($totalKotak, 0, ',', '.') . "</td>
+  <td class='text-end'>0</td>
+</tr>";
+            $no++;
+        }
+
+        //
+        // === TAMPILKAN TOR-TOR (TETAP DINAMIS) ===
+        //
+        foreach ($torTorList as $row) {
+            echo "
+<tr>
+  <td class='text-center'>{$no}</td>
+  <td>Tor-tor ({$row['nama']})</td>
+  <td class='text-end'>" . number_format($row['jumlah'], 0, ',', '.') . "</td>
+  <td class='text-end'>" . number_format($row['jumlah'], 0, ',', '.') . "</td>
+  <td class='text-end'>0</td>
+</tr>";
+            $no++;
+        }
+
 
         // === TOTAL KESELURUHAN ===
         $totalJumlah = $jumlahToktok + $totalSukarela + $totalPesanan + $totalTagihanKupon + $grandSilua + $totalJumlahSumbangan;
@@ -921,6 +1051,71 @@ SELECT
     </tbody>
     </table>";
         }
+
+        /* ================= Kotak ================= */
+        echo "<h4 class='section-title mt-4'>Kotak Sumbangan</h4>";
+
+        /* ============================================================
+            6. DATA KOTAK SUMBANGAN
+            ============================================================ */
+
+        $stmt = $pdo->query("
+                SELECT id, nama, jumlah, keterangan, photo, tanggal
+                FROM sumbangan
+                WHERE jenis = 'kotak-sumbangan'
+                ORDER BY tanggal DESC
+            ");
+        $kotak = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($kotak)) {
+            echo "<p class='text-muted'>Tidak ada data Kotak Sumbangan.</p>";
+        } else {
+            echo "<table class='table table-bordered table-sm align-middle'>
+    <thead class='table-secondary text-center'>
+        <tr>
+            <th>#</th>
+            <th>Nama</th>
+            <th>Jumlah (Rp)</th>
+            <th>Keterangan</th>
+            <th>Tanggal</th>
+        </tr>
+    </thead>
+    <tbody>";
+
+            $no = 1;
+            $totalJumlah = 0;
+
+            foreach ($kotak as $r) {
+                $jumlah = (int)$r['jumlah'];
+                $totalJumlah += $jumlah;
+
+                // link bukti (cek jika file ada di folder uploads)
+                $link = "-";
+                if (!empty($r['photo']) && file_exists(__DIR__ . "/uploads/" . $r['photo'])) {
+                    $link = "<a href='uploads/" . htmlspecialchars($r['photo']) . "' target='_blank'>Lihat</a>";
+                }
+
+                // bersihkan teks keterangan
+                $ket = trim(html_entity_decode(strip_tags($r['keterangan'] ?? '-')));
+
+                echo "<tr>
+            <td class='text-center'>{$no}</td>
+            <td>" . htmlspecialchars($r['nama']) . "</td>
+            <td class='text-end'>" . number_format($jumlah, 0, ',', '.') . "</td>
+            <td>" . htmlspecialchars($ket) . "</td>
+            <td class='text-center'>" . date('d/m/Y', strtotime($r['tanggal'])) . "</td>
+        </tr>";
+                $no++;
+            }
+
+            echo "<tr class='table-light fw-bold'>
+        <td colspan='2' class='text-center'>TOTAL Kotak Sumbangan</td>
+        <td class='text-end'>Rp " . number_format($totalJumlah, 0, ',', '.') . "</td>
+        <td colspan='3'></td>
+    </tr>
+    </tbody>
+    </table>";
+        }
         /* ================= SILUA (satu tabel, urut dan subtotal) ================= */
         echo "<h4 class='section-title'>Dana Silua</h4>";
 
@@ -1105,7 +1300,7 @@ SELECT
         $pengeluaran = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Judul
-        $judulPengeluaran = 'Laporan Pengeluaran PTS';
+        $judulPengeluaran = 'Laporan Pengeluaran Dana Bona Taon';
         if ($filterSeksiPengeluaran) {
             $judulPengeluaran .= ' - Seksi ' . ($pengeluaran[0]['seksi'] ?? 'Tidak Dikenal');
         }
@@ -1122,7 +1317,11 @@ SELECT
                 $safe = htmlspecialchars($filename);
                 return "<a href='uploads/{$safe}' target='_blank'>Lihat</a>";
             };
-
+            $makeLink2 = function ($filename) {
+                if (!$filename) return "Tunai";
+                $safe = htmlspecialchars($filename);
+                return "<a href='uploads/{$safe}' target='_blank'>Lihat</a>";
+            };
             if ($filterSeksiPengeluaran) {
                 // ===== Satu seksi (satu tabel) =====
                 echo "
@@ -1153,7 +1352,7 @@ SELECT
                     $ket = htmlspecialchars(strip_tags($r['keterangan'] ?? '-'));
 
                     $nota = $makeLink($r['nota'] ?? null);
-                    $bayar = $makeLink($r['bayar'] ?? null);
+                    $bayar = $makeLink2($r['bayar'] ?? null);
 
                     echo "<tr>
                     <td class='text-center'>{$no}</td>
@@ -1218,7 +1417,7 @@ SELECT
                         $ket = htmlspecialchars(strip_tags($r['keterangan'] ?? '-'));
 
                         $nota = $makeLink($r['nota'] ?? null);
-                        $bayar = $makeLink($r['bayar'] ?? null);
+                        $bayar = $makeLink2($r['bayar'] ?? null);
 
                         echo "<tr>
                         <td class='text-center'>{$no}</td>
@@ -1245,14 +1444,118 @@ SELECT
                     $grandTotal += $subtotal;
                 }
 
-                echo "<div class='mt-3 p-3 border rounded bg-light text-center'>
+                echo "<div class='mt-2 mb-4 p-3 border rounded bg-light text-center'>
                 <div class='fw-bold'>TOTAL KESELURUHAN PENGELUARAN</div>
                 <div class='fs-5'>Rp " . number_format($grandTotal, 0, ',', '.') . "</div>
               </div>";
             }
         }
+        /* ================= Sumbangan Produk ================= */
+
+        $stmt = $pdo->prepare("SELECT * FROM sumbangan WHERE jenis = 'produk' ORDER BY tanggal DESC");
+        $stmt->execute();
+        $produk = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Judul
+        $judulSumbangan = 'Laporan Sumbangan Produk Bona Taon';
+        echo "<h3 class='section-break text-primary'>3. {$judulSumbangan}</h3>";
+
+        if (empty($produk)) {
+            echo "<p class='text-muted'>Tidak ada data sumbangan produk.</p>";
+        } else {
+            echo "
+    <div class='table-responsive'>
+        <table class='table table-bordered table-striped'>
+            <thead class='table-secondary'>
+                <tr>
+                    <th>No</th>
+                    <th>Nama</th>
+                    <th>Keterangan</th>
+                    <th>Foto</th>
+                    <th>Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+    ";
+
+            $no = 1;
+            foreach ($produk as $row) {
+                echo "<tr>";
+                echo "<td>" . $no++ . "</td>";
+                echo "<td>" . htmlspecialchars($row['nama']) . "</td>";
+                echo "<td>" . ($row['keterangan']) . "</td>";
+
+                echo "<td>";
+                if (!empty($row['photo']) && file_exists("uploads/" . $row['photo'])) {
+                    echo "<a href='uploads/" . htmlspecialchars($row['photo']) . "' target='_blank'>"
+                        . htmlspecialchars($row['photo']) .
+                        "</a>";
+                } else {
+                    echo "<span class='text-muted'>Tidak ada</span>";
+                }
+                echo "</td>";
+
+                echo "<td>" . date('d/m/Y', strtotime($row['tanggal'])) . "</td>";
+                echo "</tr>";
+            }
+
+            echo "
+            </tbody>
+        </table>
+    </div>
+    ";
+        }
+
+
 
         ?>
+
+        <div class="ttd-wrapper">
+
+            <!-- BAGIAN 1 -->
+            <div class="ttd-title">Disusun oleh,</div>
+            <div class="ttd-subtitle">Panitia Pesta Bona Taon 2026</div>
+
+            <div class="ttd-row">
+                <div class="ttd-col">
+                    <strong>Ketua</strong>
+                    <div class="ttd-line"></div>
+                </div>
+                <div class="ttd-col">
+                    <strong>Sekretaris</strong>
+                    <div class="ttd-line"></div>
+                </div>
+                <div class="ttd-col">
+                    <strong>Bendahara</strong>
+                    <div class="ttd-line"></div>
+                </div>
+            </div>
+
+            <!-- BAGIAN 2 -->
+            <div style="margin-top:100px;">
+                <div class="ttd-title">Mengetahui/Menerima,</div>
+                <div class="ttd-subtitle">
+                    Badan Pengurus Harian (BPH) Punguan Tuan Sihubil Bali
+                </div>
+
+                <div class="ttd-row">
+                    <div class="ttd-col">
+                        <strong>Ketua</strong>
+                        <div class="ttd-line"></div>
+                    </div>
+                    <div class="ttd-col">
+                        <strong>Sekretaris</strong>
+                        <div class="ttd-line"></div>
+                    </div>
+                    <div class="ttd-col">
+                        <strong>Bendahara</strong>
+                        <div class="ttd-line"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
 
     </div>
     <script>
