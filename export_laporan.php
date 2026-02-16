@@ -47,7 +47,7 @@ function tanggal_indo($tgl = null)
             font-size: 0.9rem;
         }
 
-        h4.section-title {
+        .section-title {
             background: #f1f3f5;
             padding: .5rem .75rem;
             border-left: 5px solid #0d6efd;
@@ -76,6 +76,10 @@ function tanggal_indo($tgl = null)
             .page-keep-together {
                 page-break-inside: avoid;
                 break-inside: avoid;
+            }
+
+            h3.section-break {
+                page-break-before: always;
             }
 
             /* H4 section berikutnya mulai halaman baru */
@@ -160,20 +164,21 @@ SELECT
         // =======================================================
         ?>
 
-        <div class="mb-4 p-4 rounded shadow-sm 
-    <?= $saldo >= 0 ? 'bg-success text-white' : 'bg-danger text-white' ?>">
+        <div class="mb-4 p-4 rounded shadow-sm">
 
-            <h4 class="mb-1">SALDO AKHIR</h4>
-            <h2 class="fw-bold mb-2">
-                Rp <?= number_format($saldo, 0, ',', '.') ?>
-            </h2>
-
+            <div class="row text-center mt-3 text-primary">
+                <h4 class="mb-1">SALDO AKHIR</h4>
+                <h2 class="fw-bold mb-2">
+                    Rp <?= number_format($saldo, 0, ',', '.') ?>
+                </h2>
+            </div>
+            <hr>
             <div class="row text-center mt-3">
-                <div class="col-md-6">
+                <div class="col-md-6 text-success">
                     <div class="fw-bold">Total Pemasukan</div>
                     <div>Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 text-danger">
                     <div class="fw-bold">Total Pengeluaran</div>
                     <div>Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></div>
                 </div>
@@ -1105,7 +1110,7 @@ SELECT
             $judulPengeluaran .= ' - Seksi ' . ($pengeluaran[0]['seksi'] ?? 'Tidak Dikenal');
         }
 
-        echo "<h3 class='section-title text-danger'>2. {$judulPengeluaran}</h3>";
+        echo "<h3 class='section-break text-danger'>2. {$judulPengeluaran}</h3>";
 
         if (empty($pengeluaran)) {
             echo "<p class='text-muted'>Tidak ada data pengeluaran.</p>";

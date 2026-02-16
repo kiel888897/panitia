@@ -237,6 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <option value="dana" <?= ($sumbangan['jenis'] === 'dana') ? 'selected' : '' ?>>Dana</option>
                                                 <option value="produk" <?= ($sumbangan['jenis'] === 'produk') ? 'selected' : '' ?>>Produk</option>
                                                 <option value="tor-tor" <?= ($sumbangan['jenis'] === 'tor-tor') ? 'selected' : '' ?>>Tor-tor</option>
+                                                <option value="kotak-sumbangan" <?= ($sumbangan['jenis'] === 'kotak-sumbangan') ? 'selected' : '' ?>>Kotak Sumbangan</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a valid jenis Type.</div>
                                         </div>
@@ -418,7 +419,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const jumlahContainer = document.getElementById("jumlahContainer");
 
             jenisSelect.addEventListener("change", function() {
-                if (this.value === "dana" || this.value === "tor-tor") {
+                if (this.value === "dana" || this.value === "tor-tor" || this.value === "kotak-sumbangan") {
                     jumlahContainer.style.display = "block";
                 } else {
                     jumlahContainer.style.display = "none";
