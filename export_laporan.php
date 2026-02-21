@@ -208,6 +208,39 @@ SELECT
         $total_pengeluaran = $total2['total_pengeluaran'];
         $saldo = $total_pemasukan - $total_pengeluaran;
 
+        // ===== TOTAL PIUTANG DINAMIS =====
+        $queryPiutang = "
+SELECT
+(
+    -- Toktok
+    ((SELECT COUNT(*) FROM anggotas) * 250000)
+    - IFNULL((SELECT SUM(toktok) FROM iuran), 0)
+
+    +
+
+    -- Baju
+    (IFNULL((SELECT SUM(qty) FROM order_items), 0) * 100000)
+    - IFNULL((SELECT SUM(jumlah) FROM bayar_baju), 0)
+
+    +
+
+    -- Kupon
+    IFNULL((SELECT SUM((jumlah - kembali) * 50000) FROM kupon), 0)
+    - IFNULL((SELECT SUM(bayar) FROM bayar_kupon), 0)
+
+    +
+
+    -- Silua
+    IFNULL((SELECT SUM(jumlah) FROM silua), 0)
+    - IFNULL((SELECT SUM(jumlah) FROM bayar_silua), 0)
+) AS total_piutang
+";
+
+        $stmtPiutang = $pdo->query($queryPiutang);
+        $dataPiutang = $stmtPiutang->fetch(PDO::FETCH_ASSOC);
+        $totalPiutang = $dataPiutang['total_piutang'];
+
+
         // =======================================================
         ?>
 
@@ -229,14 +262,14 @@ SELECT
                             <div class="mb-3">
                                 <span class="text-secondary">Piutang</span>
                                 <h4 class="fw-bold text-warning">
-                                    Rp 21.850.000
+                                    Rp <?= number_format($totalPiutang, 0, ',', '.') ?>
                                 </h4>
                             </div>
 
                             <hr>
 
                             <h3 class="fw-bold text-primary">
-                                Total: Rp <?= number_format($saldo + 21850000, 0, ',', '.') ?>
+                                Total: Rp <?= number_format($saldo + $totalPiutang, 0, ',', '.') ?>
                             </h3>
 
                         </div>
@@ -257,6 +290,7 @@ SELECT
             </div>
         </div>
 
+        <!-- rekap  -->
         <h3 class='mt-3 text-success'>1. Laporan Pemasukan Dana Bona Taon</h3>
 
         <?php
@@ -790,8 +824,6 @@ SELECT
 
         /* ================= KUPON ================= */
         echo "<h4 class='section-title mt-4'>Kupon Bajar KFC</h4>";
-
-
         /* ============================================================
    4. DATA KUPON
    ============================================================ */
@@ -1385,6 +1417,7 @@ SELECT
                 }
 
                 $grandTotal = 0;
+                $totalSeksiDana = 0;
 
                 foreach ($grouped as $seksiName => $items) {
 
@@ -1442,12 +1475,56 @@ SELECT
                 </div>";
 
                     $grandTotal += $subtotal;
-                }
 
-                echo "<div class='mt-2 mb-4 p-3 border rounded bg-light text-center'>
-                <div class='fw-bold'>TOTAL KESELURUHAN PENGELUARAN</div>
-                <div class='fs-5'>Rp " . number_format($grandTotal, 0, ',', '.') . "</div>
-              </div>";
+                    // Simpan jika ini seksi dana
+                    if (stripos($seksiName, 'dana') !== false) {
+                        $totalSeksiDana = $subtotal;
+                    }
+                }
+                $totalPengeluaranPesta = $grandTotal - $totalSeksiDana;
+
+                echo "
+<div class='row justify-content-center mt-4 mb-4'>
+
+    <div class='col-md-8'>
+        <div class='card shadow-sm border-0'>
+            <div class='card-body'>
+
+                <div class='row text-center'>
+
+                    <!-- Total Keseluruhan -->
+                    <div class='col-md-6 border-end'>
+                        <div class='text-muted small'>TOTAL KESELURUHAN PENGELUARAN</div>
+                        <div class='fs-4 fw-bold text-danger mt-1'>
+                            Rp " . number_format($grandTotal, 0, ',', '.') . "
+                        </div>
+                        <div class='small text-muted mt-2'>
+                            Termasuk Seksi Dana sebesar<br>
+                            <span class='fw-semibold'>
+                                Rp " . number_format($totalSeksiDana, 0, ',', '.') . "
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Total Pesta -->
+                    <div class='col-md-6'>
+                        <div class='text-muted small'>TOTAL PENGELUARAN PESTA</div>
+                        <div class='fs-4 fw-bold text-primary mt-1'>
+                            Rp " . number_format($totalPengeluaranPesta, 0, ',', '.') . "
+                        </div>
+                        <div class='small text-muted mt-2'>
+                            (Tidak termasuk Seksi Dana)
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+";
             }
         }
         /* ================= Sumbangan Produk ================= */
@@ -1471,7 +1548,6 @@ SELECT
                     <th>No</th>
                     <th>Nama</th>
                     <th>Keterangan</th>
-                    <th>Foto</th>
                     <th>Tanggal</th>
                 </tr>
             </thead>
@@ -1484,17 +1560,6 @@ SELECT
                 echo "<td>" . $no++ . "</td>";
                 echo "<td>" . htmlspecialchars($row['nama']) . "</td>";
                 echo "<td>" . ($row['keterangan']) . "</td>";
-
-                echo "<td>";
-                if (!empty($row['photo']) && file_exists("uploads/" . $row['photo'])) {
-                    echo "<a href='uploads/" . htmlspecialchars($row['photo']) . "' target='_blank'>"
-                        . htmlspecialchars($row['photo']) .
-                        "</a>";
-                } else {
-                    echo "<span class='text-muted'>Tidak ada</span>";
-                }
-                echo "</td>";
-
                 echo "<td>" . date('d/m/Y', strtotime($row['tanggal'])) . "</td>";
                 echo "</tr>";
             }
